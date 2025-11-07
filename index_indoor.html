@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="module" src="index_indoor.js"></script>
+<script src="//cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+<title>室內 AR - 步數追蹤</title>
+<link rel="stylesheet" href="style.css">
+<style>
+    /* 額外的室內模式樣式 */
+    #info-panel {
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+    
+    .step-info {
+        background: rgba(0, 150, 255, 0.2);
+        border-left: 3px solid #0096ff;
+        padding: 8px;
+        margin-top: 10px;
+        border-radius: 4px;
+    }
+    
+    #reset-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: #ff4444;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 1000;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    
+    #reset-btn:active {
+        transform: scale(0.95);
+    }
+    
+    .mode-badge {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #00ff88;
+        color: #000;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 12px;
+        z-index: 1000;
+    }
+</style>
+</head>
+<body>
+<main>
+
+<!-- 模式標記 -->
+<div class="mode-badge">🏠 室內模式</div>
+
+<!-- 資訊面板 -->
+<div id="info-panel">
+    <div class="info-title">📍 位置資訊</div>
+    <div class="info-item">
+        <span class="info-label">X 座標:</span>
+        <span class="info-value" id="lon-value">0.00 m</span>
+    </div>
+    <div class="info-item">
+        <span class="info-label">Z 座標:</span>
+        <span class="info-value" id="lat-value">0.00 m</span>
+    </div>
+    <div class="info-item">
+        <span class="info-label">步數:</span>
+        <span class="info-value" id="grid-point">0</span>
+    </div>
+    <div class="step-info">
+        <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">💡 提示</div>
+        <div style="font-size: 12px;">開始走動以追蹤位置<br>訊號圓圈會出現在固定位置</div>
+    </div>
+    <div id="grid-status">訊號點數量: <span id="grid-count">0</span></div>
+    
+    <div class="info-section">
+        <div class="info-title" style="font-size: 13px; margin-bottom: 6px;">📶 當前訊號</div>
+        <div class="info-item">
+            <span class="info-label">訊號強度:</span>
+            <span class="info-value" id="signal-strength" style="font-weight: bold;">--</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">最近訊號點:</span>
+            <span class="info-value" id="nearest-station" style="color: #ffcc00;">--</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">距離:</span>
+            <span class="info-value" id="station-distance">--</span>
+        </div>
+    </div>
+</div>
+
+<!-- 訊號點列表 -->
+<div id="base-stations">
+    <div class="info-title">📡 訊號點位置</div>
+    <div class="station-item">
+        <div class="station-name">訊號點 A</div>
+        <div class="station-coords">正前方 5m (強)</div>
+    </div>
+    <div class="station-item">
+        <div class="station-name">訊號點 B</div>
+        <div class="station-coords">右前方 5m (中)</div>
+    </div>
+    <div class="station-item">
+        <div class="station-name">訊號點 C</div>
+        <div class="station-coords">左前方 3m (較強)</div>
+    </div>
+    <div class="station-item">
+        <div class="station-name">訊號點 D</div>
+        <div class="station-coords">遠前方 10m (弱)</div>
+    </div>
+    <div class="station-item">
+        <div class="station-name">訊號點 E</div>
+        <div class="station-coords">右側 5m (中)</div>
+    </div>
+    <div class="station-item">
+        <div class="station-name">訊號點 F</div>
+        <div class="station-coords">左側 5m (較中)</div>
+    </div>
+    
+    <div class="signal-legend">
+        <div class="legend-item">
+            <div class="color-box color-strong"></div>
+            <span>強 (90+)</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box color-high"></div>
+            <span>較強 (70-89)</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box color-medium"></div>
+            <span>中 (50-69)</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box color-orange"></div>
+            <span>較弱 (30-49)</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box color-weak"></div>
+            <span>弱 (10-29)</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box color-none"></div>
+            <span>無 (&lt;10)</span>
+        </div>
+    </div>
+</div>
+
+<!-- 假位置輸入 (改為重設按鈕) -->
+<div id="gpsinput" style="display: none;">
+    <div><input id="fakeLon" placeholder="X 座標 (公尺)" value="0"/></div>
+    <div><input id="fakeLat" placeholder="Z 座標 (公尺)" value="0"/></div>
+    <div><button id="setFakeLoc">重設到原點</button></div>
+</div>
+
+<!-- 快速重設按鈕 -->
+<button id="reset-btn" onclick="document.getElementById('setFakeLoc').click()">
+    🔄 重設原點
+</button>
+
+<!-- Three.js Canvas -->
+<canvas id="glscene"></canvas>
+
+</main>
+
+<script>
+    // 頁面載入完成後的額外初始化
+    window.addEventListener('load', () => {
+        console.log("✅ 室內 AR 頁面已載入");
+        
+        // 提示使用者授權感測器
+        setTimeout(() => {
+            if (typeof DeviceMotionEvent !== 'undefined' && 
+                typeof DeviceMotionEvent.requestPermission === 'function') {
+                
+                // iOS 13+ 需要使用者互動來授權
+                const btn = document.createElement('button');
+                btn.textContent = '🎯 開始追蹤';
+                btn.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    padding: 20px 40px;
+                    font-size: 20px;
+                    background: #007AFF;
+                    color: white;
+                    border: none;
+                    border-radius: 12px;
+                    z-index: 10000;
+                    cursor: pointer;
+                `;
+                
+                btn.onclick = async () => {
+                    try {
+                        const permission = await DeviceMotionEvent.requestPermission();
+                        if (permission === 'granted') {
+                            btn.remove();
+                            console.log("✅ 動作感測器已授權");
+                        }
+                    } catch (error) {
+                        alert('無法授權感測器: ' + error.message);
+                    }
+                };
+                
+                document.body.appendChild(btn);
+            }
+        }, 1000);
+    });
+</script>
+
+</body>
+</html>
