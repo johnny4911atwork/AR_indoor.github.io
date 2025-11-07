@@ -1,7 +1,6 @@
 import * as THREE from "https://esm.sh/three";
 
-// ========== AR.js 初始化 ==========
-// 使用 AR.js 的攝像頭和陀螺儀功能
+// 使用攝像頭和陀螺儀功能
 const ARCanvas = document.getElementById('glscene');
 const ARRenderer = new THREE.WebGLRenderer({
     canvas: ARCanvas,
