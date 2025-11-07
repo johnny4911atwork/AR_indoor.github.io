@@ -1,6 +1,7 @@
 import * as THREE from "https://esm.sh/three";
 
-// 使用攝像頭和陀螺儀功能
+// ========== AR 初始化 ==========
+// 使用攝像頭功能
 const ARCanvas = document.getElementById('glscene');
 const ARRenderer = new THREE.WebGLRenderer({
     canvas: ARCanvas,
@@ -11,7 +12,7 @@ ARRenderer.setSize(window.innerWidth, window.innerHeight);
 ARRenderer.setPixelRatio(window.devicePixelRatio);
 
 // ========== Three.js 基礎設定 ==========
-const camera = new THREE.PerspectiveCamera(
+const camera = new THREE.PerspectiveCamera( 
     75,
     window.innerWidth / window.innerHeight,
     0.1,
@@ -22,7 +23,7 @@ camera.position.set(0, 1.7, 0); // 眼睛高度
 const scene = new THREE.Scene();
 scene.background = null; // 攝像頭會設為背景
 
-// ========== 攝像頭背景設定 (使用 AR.js 方式) ==========
+// ========== 攝像頭背景設定 ==========
 let videoCameraStream = null;
 let videoTexture = null;
 
@@ -57,14 +58,18 @@ class DeviceOrientationController {
         this.gamma = 0; // y 軸旋轉
         this.euler = new THREE.Euler(0, 0, 0, 'YXZ');
         this.quaternion = new THREE.Quaternion();
+        
+        // 記錄陀螺儀初始狀態
+        console.log("📡 陀螺儀控制器已初始化");
+        console.log(`   初始姿態 - Alpha: ${this.alpha}°, Beta: ${this.beta}°, Gamma: ${this.gamma}°`);
     }
     
     async init() {
-        if (typeof DeviceOrientationEvent !== 'undefined') {
+        if (typeof DeviceOrientationEvent !== 'undefined') { //查typeof
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                 // iOS 13+ 需要使用者授權
                 try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
+                    const permission = await DeviceOrientationEvent.requestPermission(); //查回傳的是甚麼
                     if (permission === 'granted') {
                         this.connect();
                         console.log("✅ 陀螺儀已授權 (iOS)");
@@ -86,6 +91,8 @@ class DeviceOrientationController {
             this.beta = THREE.MathUtils.degToRad(event.beta || 0);
             this.gamma = THREE.MathUtils.degToRad(event.gamma || 0);
         }, false);
+        
+        console.log("📡 陀螺儀事件監聽器已連接");
     }
     
     update() {
@@ -96,6 +103,14 @@ class DeviceOrientationController {
 
 const deviceOrientationControls = new DeviceOrientationController(camera);
 deviceOrientationControls.init();
+
+// 在初始化完成後延遲一秒紀錄陀螺儀的初始值
+setTimeout(() => {
+    console.log("📊 陀螺儀初始狀態摘要:");
+    console.log(`   Alpha (Z軸): ${(deviceOrientationControls.alpha * 180 / Math.PI).toFixed(2)}°`);
+    console.log(`   Beta  (X軸): ${(deviceOrientationControls.beta * 180 / Math.PI).toFixed(2)}°`);
+    console.log(`   Gamma (Y軸): ${(deviceOrientationControls.gamma * 180 / Math.PI).toFixed(2)}°`);
+}, 1000);
 
 // 初始化攝像頭
 initializeCamera();
@@ -268,6 +283,10 @@ class IndoorPositionTracker {
             this.position.z += forwardZ * this.stepLength;
             
             console.log(`🚶 走了一步 (#${this.stepDetector.stepCount}) 位置: (${this.position.x.toFixed(2)}, ${this.position.z.toFixed(2)})`);
+            
+            // 紀錄當前的陀螺儀資訊
+            console.log(`📡 陀螺儀數據 - Yaw: ${(this.yaw * 180 / Math.PI).toFixed(2)}°, 前進方向 X: ${forwardX.toFixed(3)}, Z: ${forwardZ.toFixed(3)}`);
+            console.log(`   加速度 - X: ${accelerationData.x.toFixed(3)}, Y: ${accelerationData.y.toFixed(3)}, Z: ${accelerationData.z.toFixed(3)}`);
             
             return true; // 有移動
         }
