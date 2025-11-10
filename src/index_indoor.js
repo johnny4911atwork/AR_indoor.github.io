@@ -182,12 +182,11 @@ function createIndoorSignals() {
         const material = getMaterialForColor(color);
         const mesh = new THREE.Mesh(geometry, material);
         
-        // 設定位置 (相對於世界座標)
-        // 改成與相機同高度，讓訊號點出現在視線範圍內
-        mesh.position.set(point.x, 1.7, point.z); // y=1.7 與眼睛同高
+        // 設定位置 (與眼睛同高)
+        mesh.position.set(point.x, 1.7, point.z); // y=1.7 視線高度
         
-        // 不旋轉，讓圓形面向相機 (billboard 效果將在 animate 中處理)
-        // mesh.rotation.x = -Math.PI / 2;
+        // 不旋轉 - 讓圓形垂直站立，面向 Z 軸負方向
+        // 這樣當您朝前看時就能看到
         
         // 儲存資料
         mesh.userData = {
@@ -395,7 +394,8 @@ function updateInfoPanel() {
 function animate() {
     deviceOrientationControls.update();
     
-    // 讓所有訊號點面向相機 (Billboard 效果)
+    // 讓所有訊號點永遠面向相機 (billboard 效果)
+    // 這樣無論您朝哪個方向看，都能看到訊號點正面
     signalMeshes.forEach(mesh => {
         mesh.lookAt(camera.position);
     });
