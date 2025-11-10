@@ -134,14 +134,14 @@ window.addEventListener("resize", ev => {
 });
 
 // ========== 室內訊號點資料 (使用 XYZ 座標) ==========
-// x: 左右 (正=右), y: 上下 (正=上), z: 前後 (負=前方)
+// x: 前後 (正=前方), y: 上下 (正=上), z: 左右 (正=右方)
 const INDOOR_SIGNAL_POINTS = [
-    { x: 0, y: 0, z: -5, power: 85, name: "訊號點 A" },
-    { x: 3, y: 0, z: -5, power: 60, name: "訊號點 B" },
-    { x: -3, y: 0, z: -3, power: 70, name: "訊號點 C" },
-    { x: 0, y: 0, z: -10, power: 40, name: "訊號點 D" },
-    { x: 5, y: 0, z: -2, power: 50, name: "訊號點 E" },
-    { x: -5, y: 0, z: -2, power: 55, name: "訊號點 F" }
+    { x: 5, y: 0, z: 0, power: 85, name: "訊號點 A" },    // 前方 5m
+    { x: 5, y: 0, z: -3, power: 60, name: "訊號點 B" },   // 前方 5m，左邊 3m
+    { x: 3, y: 0, z: 3, power: 70, name: "訊號點 C" },    // 前方 3m，右邊 3m
+    { x: 10, y: 0, z: 0, power: 40, name: "訊號點 D" },   // 前方 10m
+    { x: 2, y: 0, z: -5, power: 50, name: "訊號點 E" },   // 前方 2m，左邊 5m
+    { x: 2, y: 0, z: 5, power: 55, name: "訊號點 F" }     // 前方 2m，右邊 5m
 ];
 
 // ========== Material 快取 ==========
@@ -286,9 +286,9 @@ class IndoorPositionTracker {
         
         if (stepDetected) {
             // 計算前進方向 (基於當前 yaw)
-            // X 往前為正，Z 往右為正
-            const forwardX = Math.sin(this.yaw);   // 往前 X 增加
-            const forwardZ = Math.cos(this.yaw);   // 往右 Z 增加
+            // 改為負值以匹配訊號點座標系統 (z負=前方)
+            const forwardX = -Math.sin(this.yaw);   // X 軸反向
+            const forwardZ = -Math.cos(this.yaw);   // Z 軸反向 (前方為負)
             
             // 更新位置
             this.position.x += forwardX * this.stepLength;
