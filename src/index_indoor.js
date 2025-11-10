@@ -183,22 +183,23 @@ function createIndoorSignals() {
         const mesh = new THREE.Mesh(geometry, material);
         
         // 設定位置 (相對於世界座標)
-        mesh.position.set(point.x, 0.5, point.z); // y=0.5 略高於地面
+        // 改成與相機同高度，讓訊號點出現在視線範圍內
+        mesh.position.set(point.x, 1.7, point.z); // y=1.7 與眼睛同高
         
-        // 水平放置 (朝上)
-        mesh.rotation.x = -Math.PI / 2;
+        // 不旋轉，讓圓形面向相機 (billboard 效果將在 animate 中處理)
+        // mesh.rotation.x = -Math.PI / 2;
         
         // 儲存資料
         mesh.userData = {
             name: point.name,
             power: point.power,
-            originalPosition: { x: point.x, y: 0.5, z: point.z }
+            originalPosition: { x: point.x, y: 1.7, z: point.z }
         };
         
         scene.add(mesh);
         signalMeshes.push(mesh);
         
-        console.log(`✅ 已創建訊號點: ${point.name} at (${point.x}, ${point.z})`);
+        console.log(`✅ 已創建訊號點: ${point.name} at (${point.x}, 1.7, ${point.z})`);
     });
 }
 
@@ -393,6 +394,12 @@ function updateInfoPanel() {
 // ========== 動畫循環 ==========
 function animate() {
     deviceOrientationControls.update();
+    
+    // 讓所有訊號點面向相機 (Billboard 效果)
+    signalMeshes.forEach(mesh => {
+        mesh.lookAt(camera.position);
+    });
+    
     ARRenderer.render(scene, camera);
     requestAnimationFrame(animate);
 }
