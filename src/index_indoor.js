@@ -103,7 +103,7 @@ class DeviceOrientationController {
         // 根據手機方向調整
         // beta - 90度：補償手機直立時的角度差異
         this.euler.set(
-            this.beta + Math.PI / 2,  // X 軸：補償 90 度
+            this.beta - Math.PI / 2,  // X 軸：補償 90 度
             this.alpha,                // Y 軸：左右旋轉
             -this.gamma                // Z 軸：傾斜
         );
@@ -286,7 +286,8 @@ class IndoorPositionTracker {
         
         if (stepDetected) {
             // 計算前進方向 (基於當前 yaw)
-            const forwardX = Math.sin(this.yaw);
+            // 修正：X 軸方向反轉
+            const forwardX = -Math.sin(this.yaw);  // 改為負值
             const forwardZ = -Math.cos(this.yaw);
             
             // 更新位置
