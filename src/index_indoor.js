@@ -53,9 +53,9 @@ async function initializeCamera() {
 class DeviceOrientationController {
     constructor(camera) {
         this.camera = camera;
-        this.alpha = 0; // z 軸旋轉
-        this.beta = 0;  // x 軸旋轉
-        this.gamma = 0; // y 軸旋轉
+        this.alpha = 0; 
+        this.beta = 0;  
+        this.gamma = 0;
         this.initialYaw = null; // 新增：初始羅盤方向
         this.euler = new THREE.Euler(0, 0, 0, 'YXZ');
         this.quaternion = new THREE.Quaternion();
@@ -66,7 +66,7 @@ class DeviceOrientationController {
     }
     
     async init() {
-        if (typeof DeviceOrientationEvent !== 'undefined') { //查typeof
+        if (typeof DeviceOrientationEvent !== 'undefined') { 
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                 // iOS 13+ 需要使用者授權
                 try {
@@ -105,15 +105,11 @@ class DeviceOrientationController {
     }
     
     update() {
-        // 修正座標系統對齊問題
-        // 當手機直立拿著時，需要補償 90 度讓場景正確對齊
-        const screenOrientation = window.orientation || 0;
-        
         // 根據手機方向調整
         // beta - 90度：補償手機直立時的角度差異
         // alpha - initialYaw：校準羅盤，讓初始方向為 Z 軸負方向
         this.euler.set(
-            this.beta - Math.PI / 2,  // X 軸：補償 90 度
+            this.beta - Math.PI / 2,  // X 軸：補償 90 度 (右手坐標系)
             this.alpha - (this.initialYaw || 0), // Y 軸：校準後的左右旋轉
             -this.gamma                // Z 軸：傾斜
         );
@@ -147,7 +143,7 @@ window.addEventListener("resize", ev => {
 // x: 左右 (正=右), y: 上下 (正=上), z: 前後 (負=前方)
 const INDOOR_SIGNAL_POINTS = [
     { x: 0, y: 0, z: -5, power: 85, name: "訊號點 A" },
-    { x: 3, y: 0, z: -5, power: 60, name: "訊號點 B" },
+    { x: -3, y: 0, z: 0, power: 60, name: "訊號點 B" },
     { x: -3, y: 0, z: -3, power: 70, name: "訊號點 C" },
     { x: 0, y: 0, z: -10, power: 40, name: "訊號點 D" },
     { x: 5, y: 0, z: -2, power: 50, name: "訊號點 E" },
