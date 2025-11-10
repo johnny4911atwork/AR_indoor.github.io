@@ -293,7 +293,7 @@ class IndoorPositionTracker {
         
         if (stepDetected) {
             // 計算前進方向 (基於當前 yaw)
-            const forwardX = Math.sin(this.yaw);
+            const forwardX = -Math.sin(this.yaw);
             const forwardZ = Math.cos(this.yaw);
             
             // 更新位置
