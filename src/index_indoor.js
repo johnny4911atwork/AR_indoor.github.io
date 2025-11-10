@@ -105,7 +105,7 @@ class DeviceOrientationController {
         this.euler.set(
             this.beta - Math.PI / 2,  // X 軸：補償 90 度
             this.alpha,                // Y 軸：左右旋轉
-            -this.gamma                // Z 軸：傾斜
+            this.gamma                 // Z 軸：反轉方向
         );
         
         this.camera.quaternion.setFromEuler(this.euler);
