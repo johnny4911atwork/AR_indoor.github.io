@@ -56,6 +56,7 @@ class DeviceOrientationController {
         this.alpha = 0; // z 軸旋轉
         this.beta = 0;  // x 軸旋轉
         this.gamma = 0; // y 軸旋轉
+        this.initialYaw = null; // 新增：初始羅盤方向
         this.euler = new THREE.Euler(0, 0, 0, 'YXZ');
         this.quaternion = new THREE.Quaternion();
         
@@ -86,11 +87,19 @@ class DeviceOrientationController {
     }
     
     connect() {
-        window.addEventListener('deviceorientation', (event) => {
+        const handleOrientation = (event) => {
+            if (this.initialYaw === null && event.alpha !== null) {
+                // 記錄第一次獲取到的 alpha 值作為初始羅盤方向
+                this.initialYaw = THREE.MathUtils.degToRad(event.alpha);
+                console.log(`✅ 初始羅盤方向已校準: ${(this.initialYaw * 180 / Math.PI).toFixed(2)}°`);
+            }
+
             this.alpha = THREE.MathUtils.degToRad(event.alpha || 0);
             this.beta = THREE.MathUtils.degToRad(event.beta || 0);
             this.gamma = THREE.MathUtils.degToRad(event.gamma || 0);
-        }, false);
+        };
+        
+        window.addEventListener('deviceorientation', handleOrientation, false);
         
         console.log("📡 陀螺儀事件監聽器已連接");
     }
@@ -102,9 +111,10 @@ class DeviceOrientationController {
         
         // 根據手機方向調整
         // beta - 90度：補償手機直立時的角度差異
+        // alpha - initialYaw：校準羅盤，讓初始方向為 Z 軸負方向
         this.euler.set(
             this.beta - Math.PI / 2,  // X 軸：補償 90 度
-            this.alpha,                // Y 軸：左右旋轉
+            this.alpha - (this.initialYaw || 0), // Y 軸：校準後的左右旋轉
             -this.gamma                // Z 軸：傾斜
         );
         
@@ -273,10 +283,11 @@ class IndoorPositionTracker {
         this.yaw = 0; // 水平方向角度
     }
     
-    updateOrientation(orientationData) {
+    updateOrientation(orientationData, initialYaw) {
         // 從 deviceorientation 事件更新方向
-        if (orientationData.alpha !== null) {
-            this.yaw = orientationData.alpha * Math.PI / 180;
+        if (orientationData.alpha !== null && initialYaw !== null) {
+            // 使用校準後的方向
+            this.yaw = (orientationData.alpha * Math.PI / 180) - initialYaw;
         }
     }
     
@@ -332,7 +343,7 @@ window.addEventListener('deviceorientation', (event) => {
         alpha: event.alpha,
         beta: event.beta,
         gamma: event.gamma
-    });
+    }, deviceOrientationControls.initialYaw); // 傳入初始 Yaw
 });
 
 // 監聽加速度計
