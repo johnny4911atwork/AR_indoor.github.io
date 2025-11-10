@@ -226,7 +226,7 @@ createIndoorSignals();
 class StepDetector {
     constructor() {
         this.lastMagnitude = 0;
-        this.threshold = 10.5; // 加速度閾值 (需要根據實際情況調整)
+        this.threshold = 11.25; // 加速度閾值 (需要根據實際情況調整)
         this.cooldown = 0;
         this.cooldownTime = 300; // 300ms 防抖動
         this.stepCount = 0;
@@ -422,7 +422,7 @@ animate();
 // 重設位置按鈕
 document.getElementById('setFakeLoc')?.addEventListener('click', () => {
     tracker.reset();
-    camera.position.set(0, 1.7, 0);
+    camera.position.set(0, 1.6, 0);
     updateInfoPanel();
     alert('✅ 已重設到原點!');
 });
