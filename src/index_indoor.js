@@ -143,11 +143,11 @@ window.addEventListener("resize", ev => {
 // x: 左右 (正=右), y: 上下 (正=上), z: 前後 (負=前方)
 const INDOOR_SIGNAL_POINTS = [
     { x: 0, y: 0, z: -5, power: 90, name: "訊號點 A" },
-    { x: -3, y: 0, z: 0, power: 10, name: "訊號點 B" },
+    { x: -3, y: 0, z: 0, power: 5, name: "訊號點 B" },
     { x: -3, y: 0, z: -3, power: 30, name: "訊號點 C" },
     { x: 0, y: 0, z: -10, power: 50, name: "訊號點 D" },
     { x: 5, y: 0, z: -2, power: 70, name: "訊號點 E" },
-    { x: -5, y: 0, z: -2, power: 0, name: "訊號點 F" }
+    { x: -5, y: 0, z: -2, power: 10, name: "訊號點 F" }
 ];
 
 // ========== Material 快取 ==========
