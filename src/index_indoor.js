@@ -96,7 +96,18 @@ class DeviceOrientationController {
     }
     
     update() {
-        this.euler.set(this.beta, this.alpha, -this.gamma);
+        // 修正座標系統對齊問題
+        // 當手機直立拿著時，需要補償 90 度讓場景正確對齊
+        const screenOrientation = window.orientation || 0;
+        
+        // 根據手機方向調整
+        // beta - 90度：補償手機直立時的角度差異
+        this.euler.set(
+            this.beta - Math.PI / 2,  // X 軸：補償 90 度
+            this.alpha,                // Y 軸：左右旋轉
+            -this.gamma                // Z 軸：傾斜
+        );
+        
         this.camera.quaternion.setFromEuler(this.euler);
     }
 }
@@ -182,23 +193,23 @@ function createIndoorSignals() {
         const material = getMaterialForColor(color);
         const mesh = new THREE.Mesh(geometry, material);
         
-        // 設定位置 (與眼睛同高)
-        mesh.position.set(point.x, 1.7, point.z); // y=1.7 視線高度
+        // 設定位置 (在地面稍微上方)
+        mesh.position.set(point.x, 0.1, point.z); // y=0.1 略高於地面
         
-        // 不旋轉 - 讓圓形垂直站立，面向 Z 軸負方向
-        // 這樣當您朝前看時就能看到
+        // 水平放置 (朝上)
+        mesh.rotation.x = -Math.PI / 2;
         
         // 儲存資料
         mesh.userData = {
             name: point.name,
             power: point.power,
-            originalPosition: { x: point.x, y: 1.7, z: point.z }
+            originalPosition: { x: point.x, y: 0.1, z: point.z }
         };
         
         scene.add(mesh);
         signalMeshes.push(mesh);
         
-        console.log(`✅ 已創建訊號點: ${point.name} at (${point.x}, 1.7, ${point.z})`);
+        console.log(`✅ 已創建訊號點: ${point.name} at (${point.x}, 0.1, ${point.z})`);
     });
 }
 
@@ -393,12 +404,6 @@ function updateInfoPanel() {
 // ========== 動畫循環 ==========
 function animate() {
     deviceOrientationControls.update();
-    
-    // 讓所有訊號點永遠面向相機 (billboard 效果)
-    // 這樣無論您朝哪個方向看，都能看到訊號點正面
-    signalMeshes.forEach(mesh => {
-        mesh.lookAt(camera.position);
-    });
     
     ARRenderer.render(scene, camera);
     requestAnimationFrame(animate);
