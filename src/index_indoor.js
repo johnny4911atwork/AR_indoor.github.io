@@ -283,7 +283,7 @@ class IndoorPositionTracker {
         // 從 deviceorientation 事件更新方向
         if (orientationData.alpha !== null && initialYaw !== null) {
             // 使用校準後的方向
-            this.yaw = initialYaw - (orientationData.alpha * Math.PI / 180);
+            this.yaw = (orientationData.alpha * Math.PI / 180) - initialYaw;
         }
     }
     
@@ -294,7 +294,7 @@ class IndoorPositionTracker {
         if (stepDetected) {
             // 計算前進方向 (基於當前 yaw)
             const forwardX = Math.sin(this.yaw);
-            const forwardZ = -Math.cos(this.yaw);
+            const forwardZ = Math.cos(this.yaw);
             
             // 更新位置
             this.position.x += forwardX * this.stepLength;
