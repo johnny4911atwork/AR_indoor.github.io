@@ -18,7 +18,7 @@ const camera = new THREE.PerspectiveCamera(
     0.1,
     1000
 );
-camera.position.set(0, 1.7, 0); // 眼睛高度
+camera.position.set(0, 1.6, 0); // 眼睛高度
 
 const scene = new THREE.Scene();
 scene.background = null; // 攝像頭會設為背景
@@ -142,12 +142,12 @@ window.addEventListener("resize", ev => {
 // ========== 室內訊號點資料 (使用 XYZ 座標) ==========
 // x: 左右 (正=右), y: 上下 (正=上), z: 前後 (負=前方)
 const INDOOR_SIGNAL_POINTS = [
-    { x: 0, y: 0, z: -5, power: 85, name: "訊號點 A" },
-    { x: -3, y: 0, z: 0, power: 60, name: "訊號點 B" },
-    { x: -3, y: 0, z: -3, power: 70, name: "訊號點 C" },
-    { x: 0, y: 0, z: -10, power: 40, name: "訊號點 D" },
-    { x: 5, y: 0, z: -2, power: 50, name: "訊號點 E" },
-    { x: -5, y: 0, z: -2, power: 55, name: "訊號點 F" }
+    { x: 0, y: 0, z: -5, power: 90, name: "訊號點 A" },
+    { x: -3, y: 0, z: 0, power: 10, name: "訊號點 B" },
+    { x: -3, y: 0, z: -3, power: 30, name: "訊號點 C" },
+    { x: 0, y: 0, z: -10, power: 50, name: "訊號點 D" },
+    { x: 5, y: 0, z: -2, power: 70, name: "訊號點 E" },
+    { x: -5, y: 0, z: -2, power: 0, name: "訊號點 F" }
 ];
 
 // ========== Material 快取 ==========
@@ -226,7 +226,7 @@ createIndoorSignals();
 class StepDetector {
     constructor() {
         this.lastMagnitude = 0;
-        this.threshold = 11.5; // 加速度閾值 (需要根據實際情況調整)
+        this.threshold = 10.5; // 加速度閾值 (需要根據實際情況調整)
         this.cooldown = 0;
         this.cooldownTime = 300; // 300ms 防抖動
         this.stepCount = 0;
@@ -272,8 +272,8 @@ class StepDetector {
 
 // ========== 位置追蹤器 ==========
 class IndoorPositionTracker {
-    constructor(stepLength = 0.7) {
-        this.position = { x: 0, y: 1.7, z: 0 }; // 初始位置
+    constructor(stepLength = 0.65) {
+        this.position = { x: 0, y: 1.6, z: 0 }; // 初始位置
         this.stepLength = stepLength; // 每步距離 (公尺)
         this.stepDetector = new StepDetector();
         this.yaw = 0; // 水平方向角度
@@ -313,7 +313,7 @@ class IndoorPositionTracker {
     }
     
     reset() {
-        this.position = { x: 0, y: 1.7, z: 0 };
+        this.position = { x: 0, y: 1.6, z: 0 };
         this.stepDetector.reset();
         console.log("🔄 已重設位置");
     }
@@ -328,7 +328,7 @@ class IndoorPositionTracker {
 }
 
 // 創建追蹤器
-const tracker = new IndoorPositionTracker(0.7); // 每步 0.7 公尺
+const tracker = new IndoorPositionTracker(0.65); // 每步 0.65 公尺
 
 // ========== 監聽感測器 ==========
 let lastTime = Date.now();
