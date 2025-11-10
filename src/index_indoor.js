@@ -287,7 +287,7 @@ class IndoorPositionTracker {
         // 從 deviceorientation 事件更新方向
         if (orientationData.alpha !== null && initialYaw !== null) {
             // 使用校準後的方向
-            this.yaw = (orientationData.alpha * Math.PI / 180) - initialYaw;
+            this.yaw = initialYaw - (orientationData.alpha * Math.PI / 180);
         }
     }
     
