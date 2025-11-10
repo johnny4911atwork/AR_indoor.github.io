@@ -286,9 +286,9 @@ class IndoorPositionTracker {
         
         if (stepDetected) {
             // 計算前進方向 (基於當前 yaw)
-            // 修正：X 軸方向反轉
-            const forwardX = -Math.sin(this.yaw);  // 改為負值
-            const forwardZ = -Math.cos(this.yaw);
+            // X 往前為正，Z 往右為正
+            const forwardX = Math.sin(this.yaw);   // 往前 X 增加
+            const forwardZ = Math.cos(this.yaw);   // 往右 Z 增加
             
             // 更新位置
             this.position.x += forwardX * this.stepLength;
