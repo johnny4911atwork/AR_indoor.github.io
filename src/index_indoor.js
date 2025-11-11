@@ -452,22 +452,28 @@ async function initializeAllDevices() {
 function initializeGyroPermissionButton() {
     const button = document.createElement('button');
     button.id = 'gyroPermissionButton';
-    button.textContent = '啟用陀螺儀';
+    button.textContent = '📱 啟用陀螺儀與相機';
     button.style.cssText = `
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        z-index: 1000;
-        padding: 8px 16px;
-        background-color: #4CAF50;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10000;
+        padding: 20px 40px;
+        background-color: #007AFF;
         color: white;
         border: none;
-        border-radius: 4px;
+        border-radius: 12px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 18px;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(0, 122, 255, 0.5);
     `;
     
     button.addEventListener('click', async () => {
+        button.textContent = '⏳ 載入中...';
+        button.disabled = true;
+        
         if (typeof DeviceOrientationEvent !== 'undefined' && 
             typeof DeviceOrientationEvent.requestPermission === 'function') {
             try {
@@ -475,19 +481,22 @@ function initializeGyroPermissionButton() {
                 if (permission === 'granted') {
                     deviceOrientationControls.connect();
                     console.log("✅ 陀螺儀已授權 (iOS)");
-                    alert('✅ 陀螺儀已啟用！');
                     button.remove();
                 } else {
                     console.warn("⚠️ 使用者拒絕了陀螺儀授權");
-                    alert("請允許陀螺儀授權以啟用完整功能。");
+                    button.textContent = '❌ 拒絕授權，請重試';
+                    button.disabled = false;
                 }
             } catch (error) {
                 console.error("❌ 陀螺儀授權失敗:", error);
-                alert(`陀螺儀授權失敗: ${error.message || error}`);
+                button.textContent = '❌ 授權失敗，請重試';
+                button.disabled = false;
             }
         } else {
-            console.error("❌ 裝置不支援 DeviceOrientationEvent.requestPermission");
-            alert("您的裝置或瀏覽器不支援陀螺儀授權功能。");
+            // Android 或不需要授權的裝置
+            console.log("✅ 裝置不需要授權程序，直接啟用");
+            deviceOrientationControls.connect();
+            button.remove();
         }
     });
     
@@ -511,21 +520,22 @@ function initializeResetButton() {
 async function initializeSystem() {
     console.log("🚀 正在初始化室內 AR 系統...");
     
-    // 初始化所有裝置
+    // 1. 先顯示陀螺儀授權按鈕 (iOS 需要使用者手勢)
+    initializeGyroPermissionButton();
+    
+    // 2. 初始化相機 (背景執行)
     await initializeAllDevices();
     
-    // 初始化 UI 按鈕
-    initializeGyroPermissionButton();
+    // 3. 初始化重設按鈕
     initializeResetButton();
     
-    // 初始更新資訊面板
+    // 4. 初始更新資訊面板
     updateInfoPanel();
     
-    // 記錄系統狀態
+    // 5. 記錄系統狀態
     console.log("✅ 室內 AR 系統已初始化");
     console.log(`📍 訊號點數量: ${INDOOR_SIGNAL_POINTS.length}`);
     console.log("🚶 開始走動以追蹤位置...");
-    console.log("📱 提示: 如果是 iOS 設備，請點擊「啟用陀螺儀」按鈕以授權陀螺儀功能");
 }
 
 // 頁面加載後開始初始化
