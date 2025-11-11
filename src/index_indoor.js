@@ -136,7 +136,7 @@ class DeviceOrientationController {
         this.euler.set(
             this.beta - Math.PI / 2,  // X 軸：補償 90 度 (右手坐標系)
             this.alpha - (this.initialYaw || 0), // Y 軸：校準後的左右旋轉
-            Math.PI / 2                         // Z 軸：固定為 0，保持水平（訊號點不隨手機傾斜）
+            0                         // Z 軸：固定為 0，保持水平（訊號點不隨手機傾斜）
         );
         
         this.camera.quaternion.setFromEuler(this.euler);
