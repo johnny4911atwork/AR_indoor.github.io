@@ -29,23 +29,51 @@ let videoTexture = null;
 
 async function initializeCamera() {
     try {
+        // 取得使用者攝像頭權限
         videoCameraStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }
+            video: { 
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
         });
         
         const video = document.createElement('video');
+        
+        // ✅ 關鍵：iOS 相機播放需要的屬性
+        video.setAttribute('autoplay', 'true');
+        video.setAttribute('playsinline', 'true');  // iOS 重要
+        video.setAttribute('muted', 'true');         // 允許自動播放
         video.srcObject = videoCameraStream;
-        video.play();
         
-        // 建立攝像頭紋理
-        videoTexture = new THREE.VideoTexture(video);
-        videoTexture.colorSpace = THREE.SRGBColorSpace;
-        scene.background = videoTexture;
+        // ✅ 等待影片準備好後才播放
+        video.onloadedmetadata = () => {
+            video.play().catch(err => {
+                console.error("❌ 播放錯誤:", err);
+            });
+            
+            // 建立攝像頭紋理
+            videoTexture = new THREE.VideoTexture(video);
+            videoTexture.colorSpace = THREE.SRGBColorSpace;
+            videoTexture.needsUpdate = true;
+            scene.background = videoTexture;
+            
+            console.log("✅ 攝像頭已啟動 (iOS 相容)");
+            console.log(`   解析度: ${video.videoWidth}x${video.videoHeight}`);
+        };
         
-        console.log("✅ 攝像頭已啟動");
+        // ✅ 錯誤處理
+        video.onerror = (error) => {
+            console.error("❌ 影片錯誤:", error);
+            alert("相機播放失敗: " + error.message);
+        };
+        
     } catch (error) {
+        console.error("❌ 攝像頭初始化錯誤:", error);
         alert(`攝像頭錯誤: ${error.message}`);
-        console.error("Camera error:", error);
+        
+        // 降級方案：如果相機啟動失敗，顯示深灰色背景
+        scene.background = new THREE.Color(0x333333);
     }
 }
 
