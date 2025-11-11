@@ -121,7 +121,7 @@ class DeviceOrientationController {
 
             this.alpha = THREE.MathUtils.degToRad(event.alpha || 0);
             this.beta = THREE.MathUtils.degToRad(event.beta || 0);
-            this.gamma = THREE.MathUtils.degToRad(event.gamma || 0);
+            this.gamma = 0; // 固定為 0，保持訊號點水平
         };
         
         window.addEventListener('deviceorientation', handleOrientation, false);
@@ -186,9 +186,6 @@ setTimeout(() => {
     console.log(`   Beta  (X軸): ${(deviceOrientationControls.beta * 180 / Math.PI).toFixed(2)}°`);
     console.log(`   Gamma (Y軸): ${(deviceOrientationControls.gamma * 180 / Math.PI).toFixed(2)}°`);
 }, 2000);
-
-// ⚠️ 不要自動初始化，等待用戶按鈕點擊
-// initializeCamera(); // 移除自動呼叫
 
 // ========== 視窗調整 ==========
 window.addEventListener("resize", ev => {
