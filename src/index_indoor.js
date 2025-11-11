@@ -121,7 +121,7 @@ class DeviceOrientationController {
 
             this.alpha = THREE.MathUtils.degToRad(event.alpha || 0);
             this.beta = THREE.MathUtils.degToRad(event.beta || 0);
-            this.gamma = 0; // 固定為 0，保持訊號點水平
+            this.gamma = 0; // 固定為 0，保持水平
         };
         
         window.addEventListener('deviceorientation', handleOrientation, false);
@@ -194,16 +194,9 @@ window.addEventListener("resize", ev => {
     camera.updateProjectionMatrix();
 });
 
-// ========== 室內訊號點資料 (使用 XYZ 座標) ==========
-// x: 左右 (正=右), y: 上下 (正=上), z: 前後 (負=前方)
-const INDOOR_SIGNAL_POINTS = [
-    { x: 0, y: 0, z: -5, power: 90, name: "訊號點 A" },
-    { x: -3, y: 0, z: 0, power: 5, name: "訊號點 B" },
-    { x: -3, y: 0, z: -3, power: 30, name: "訊號點 C" },
-    { x: 0, y: 0, z: -10, power: 50, name: "訊號點 D" },
-    { x: 5, y: 0, z: -2, power: 70, name: "訊號點 E" },
-    { x: -5, y: 0, z: -2, power: 10, name: "訊號點 F" }
-];
+// ========== 室內訊號點資料 (動態生成) ==========
+// 使用者每走一步就產生一個訊號點
+const dynamicSignalPoints = []; // 存放動態生成的訊號點
 
 // ========== Material 快取 ==========
 const materialCache = new Map();
@@ -242,40 +235,60 @@ function getRadiusForSignal(strength) {
 // ========== 創建訊號視覺化 (AR 物體) ==========
 const signalMeshes = [];
 
-function createIndoorSignals() {
-    INDOOR_SIGNAL_POINTS.forEach(point => {
-        const color = getColorForSignal(point.power);
-        const radius = getRadiusForSignal(point.power);
-        
-        if (radius === 0) return;
-        
-        // 創建圓形
-        const geometry = new THREE.CircleGeometry(radius, 32);
-        const material = getMaterialForColor(color);
-        const mesh = new THREE.Mesh(geometry, material);
-        
-        // 設定位置 (在地面稍微上方)
-        mesh.position.set(point.x, 0.1, point.z); // y=0.1 略高於地面
-        
-        // 水平放置 (朝上)
-        mesh.rotation.x = -Math.PI / 2;
-        
-        // 儲存資料
-        mesh.userData = {
-            name: point.name,
-            power: point.power,
-            originalPosition: { x: point.x, y: 0.1, z: point.z }
-        };
-        
-        scene.add(mesh);
-        signalMeshes.push(mesh);
-        
-        console.log(`✅ 已創建訊號點: ${point.name} at (${point.x}, 0.1, ${point.z})`);
+function createSignalAtPosition(position, signalStrength) {
+    /**
+     * 在指定位置創建一個訊號圈圈
+     * @param {Object} position - { x, z } 位置座標
+     * @param {number} signalStrength - 訊號強度 (0-100)
+     */
+    const color = getColorForSignal(signalStrength);
+    const radius = getRadiusForSignal(signalStrength);
+    
+    if (radius === 0) return null;
+    
+    // 創建圓形
+    const geometry = new THREE.CircleGeometry(radius, 32);
+    const material = getMaterialForColor(color);
+    const mesh = new THREE.Mesh(geometry, material);
+    
+    // 設定位置 (在地面稍微上方)
+    mesh.position.set(position.x, 0.1, position.z); // y=0.1 略高於地面
+    
+    // 水平放置 (朝上)
+    mesh.rotation.x = -Math.PI / 2;
+    
+    // 儲存資料
+    const stepNumber = dynamicSignalPoints.length + 1;
+    mesh.userData = {
+        name: `訊號點 #${stepNumber}`,
+        power: signalStrength,
+        stepNumber: stepNumber,
+        originalPosition: { x: position.x, y: 0.1, z: position.z }
+    };
+    
+    scene.add(mesh);
+    signalMeshes.push(mesh);
+    
+    // 儲存到動態點陣列
+    dynamicSignalPoints.push({
+        x: position.x,
+        y: 0,
+        z: position.z,
+        power: signalStrength,
+        name: mesh.userData.name,
+        stepNumber: stepNumber,
+        mesh: mesh
     });
+    
+    console.log(`✅ 已創建訊號點: ${mesh.userData.name} at (${position.x.toFixed(2)}, 0.1, ${position.z.toFixed(2)}) 強度: ${signalStrength}`);
+    
+    return mesh;
 }
 
-// 初始化時創建所有訊號點
-createIndoorSignals();
+function createIndoorSignals() {
+    // 此函數現在已棄用，改為動態創建訊號點
+    console.log("💡 訊號點現在將動態生成(每走一步創建一個)");
+}
 
 // ========== 步數偵測模組 ==========
 class StepDetector {
@@ -361,6 +374,14 @@ class IndoorPositionTracker {
             console.log(`📡 陀螺儀數據 - Yaw: ${(this.yaw * 180 / Math.PI).toFixed(2)}°, 前進方向 X: ${forwardX.toFixed(3)}, Z: ${forwardZ.toFixed(3)}`);
             console.log(`   加速度 - X: ${accelerationData.x.toFixed(3)}, Y: ${accelerationData.y.toFixed(3)}, Z: ${accelerationData.z.toFixed(3)}`);
             
+            // ========== 新增: 在當前位置創建訊號點 ==========
+            const randomSignalStrength = Math.floor(Math.random() * 91) + 10; // 隨機 10-100 的訊號強度
+            createSignalAtPosition(
+                { x: this.position.x, z: this.position.z },
+                randomSignalStrength
+            );
+            // ================================================
+            
             return true; // 有移動
         }
         
@@ -433,13 +454,13 @@ function updateInfoPanel() {
     document.getElementById('lon-value').textContent = pos.x.toFixed(2) + ' m';
     document.getElementById('lat-value').textContent = pos.z.toFixed(2) + ' m';
     document.getElementById('grid-point').textContent = `步數: ${tracker.getStepCount()}`;
-    document.getElementById('grid-count').textContent = INDOOR_SIGNAL_POINTS.length;
+    document.getElementById('grid-count').textContent = dynamicSignalPoints.length;
     
     // 計算最近的訊號點
     let nearestPoint = null;
     let minDistance = Infinity;
     
-    INDOOR_SIGNAL_POINTS.forEach(point => {
+    dynamicSignalPoints.forEach(point => {
         const dx = pos.x - point.x;
         const dz = pos.z - point.z;
         const distance = Math.sqrt(dx * dx + dz * dz);
@@ -460,6 +481,11 @@ function updateInfoPanel() {
         
         document.getElementById('nearest-station').textContent = nearestPoint.name;
         document.getElementById('station-distance').textContent = minDistance.toFixed(2) + ' m';
+    } else {
+        // 還沒有任何訊號點
+        document.getElementById('signal-strength').textContent = '--';
+        document.getElementById('nearest-station').textContent = '--';
+        document.getElementById('station-distance').textContent = '--';
     }
 }
 
@@ -478,8 +504,18 @@ animate();
 document.getElementById('setFakeLoc')?.addEventListener('click', () => {
     tracker.reset();
     camera.position.set(0, 1.6, 0);
+    
+    // 清除所有動態訊號點
+    dynamicSignalPoints.forEach(point => {
+        if (point.mesh) {
+            scene.remove(point.mesh);
+        }
+    });
+    dynamicSignalPoints.length = 0;
+    signalMeshes.length = 0;
+    
     updateInfoPanel();
-    alert('✅ 已重設到原點!');
+    alert('✅ 已重設到原點並清除所有訊號點!');
 });
 
 // 初始更新一次資訊面板
