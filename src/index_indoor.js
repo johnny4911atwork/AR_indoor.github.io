@@ -40,7 +40,7 @@ async function initializeCamera() {
 
         videoElement = document.createElement('video');
         videoElement.srcObject = videoCameraStream;
-        videoElement.setAttribute('playsinline', ''); // iOS 必需！
+        videoElement.setAttribute('playsinline', ''); // iOS 必需
         videoElement.setAttribute('webkit-playsinline', ''); // iOS 舊版本
         videoElement.autoplay = true;
         videoElement.muted = true; // iOS 必需靜音才能自動播放
@@ -99,15 +99,23 @@ class DeviceOrientationController {
                     if (permission === 'granted') {
                         this.connect();
                         console.log("✅ 陀螺儀已授權 (iOS)");
+                    } else {
+                        console.warn("⚠️ 使用者拒絕了陀螺儀授權");
+                        alert("請允許陀螺儀授權以啟用完整功能。");
                     }
                 } catch (error) {
-                    console.error("陀螺儀授權失敗:", error);
+                    console.error("❌ 陀螺儀授權失敗:", error);
+                    alert(`陀螺儀授權失敗: ${error.message || error}
+\n請嘗試以下步驟:\n1. 確認使用的是 Safari 瀏覽器\n2. 確保瀏覽器版本支援陀螺儀功能\n3. 檢查是否已授予權限`);
                 }
             } else {
                 // Android 和其他裝置
                 this.connect();
                 console.log("✅ 陀螺儀已連接 (Android/其他)");
             }
+        } else {
+            console.error("❌ 裝置不支援 DeviceOrientationEvent");
+            alert("您的裝置或瀏覽器不支援陀螺儀功能。");
         }
     }
 
@@ -220,7 +228,7 @@ function getMaterialForColor(color) {
     return materialCache.get(color);
 }
 
-// ========== 訊號強度顏色映射 ==========
+// ========== 訊號強度顏色映射 =========
 function getColorForSignal(strength) {
     if (strength >= 90) return 0x00ff00; // 綠
     if (strength >= 70) return 0x7fff00; // 黃綠
