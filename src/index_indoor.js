@@ -490,6 +490,26 @@ document.getElementById('setFakeLoc')?.addEventListener('click', () => {
     alert('✅ 已重設到原點!');
 });
 
+// 在 HTML 中新增按鈕觸發授權請求
+const gyroPermissionButton = document.createElement('button');
+gyroPermissionButton.textContent = '啟用陀螺儀';
+gyroPermissionButton.style.position = 'absolute';
+gyroPermissionButton.style.top = '10px';
+gyroPermissionButton.style.left = '10px';
+gyroPermissionButton.style.zIndex = '1000';
+document.body.appendChild(gyroPermissionButton);
+
+gyroPermissionButton.addEventListener('click', async () => {
+    try {
+        await deviceOrientationControls.init();
+        alert('✅ 陀螺儀已啟用！');
+        gyroPermissionButton.remove(); // 移除按鈕
+    } catch (error) {
+        console.error('❌ 啟用陀螺儀失敗:', error);
+        alert('啟用陀螺儀失敗，請檢查瀏覽器設定。');
+    }
+});
+
 // 初始更新一次資訊面板
 updateInfoPanel();
 
