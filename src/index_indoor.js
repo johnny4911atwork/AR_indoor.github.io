@@ -35,8 +35,6 @@ async function initializeCamera() {
         videoCameraStream = await navigator.mediaDevices.getUserMedia({
             video: { 
                 facingMode: 'environment',
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
             }
         });
         
@@ -97,7 +95,7 @@ class DeviceOrientationController {
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                 // iOS 13+ 需要使用者授權
                 try {
-                    const permission = await DeviceOrientationEvent.requestPermission(); //查回傳的是甚麼
+                    const permission = await DeviceOrientationEvent.requestPermission();
                     if (permission === 'granted') {
                         this.connect();
                         console.log("✅ 陀螺儀已授權 (iOS)");
@@ -138,7 +136,7 @@ class DeviceOrientationController {
         this.euler.set(
             this.beta - Math.PI / 2,  // X 軸：補償 90 度 (右手坐標系)
             this.alpha - (this.initialYaw || 0), // Y 軸：校準後的左右旋轉
-            -this.gamma                // Z 軸：傾斜
+            this.gamma                // Z 軸：傾斜
         );
         
         this.camera.quaternion.setFromEuler(this.euler);
