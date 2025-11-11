@@ -132,11 +132,11 @@ class DeviceOrientationController {
     update() {
         // 根據手機方向調整
         // beta - 90度：補償手機直立時的角度差異
-        // alpha - initialYaw：校準羅盤，讓初始方向為 Z 軸負方向
+        // alpha - initialYaw：校準羅盤,讓初始方向為 Z 軸負方向
         this.euler.set(
             this.beta - Math.PI / 2,  // X 軸：補償 90 度 (右手坐標系)
             this.alpha - (this.initialYaw || 0), // Y 軸：校準後的左右旋轉
-            0                // Z 軸：傾斜
+            Math.PI / 2                         // Z 軸：固定為 0，保持水平（訊號點不隨手機傾斜）
         );
         
         this.camera.quaternion.setFromEuler(this.euler);
