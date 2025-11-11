@@ -178,44 +178,58 @@
     window.addEventListener('load', () => {
         console.log("✅ 室內 AR 頁面已載入");
         
-        // 提示使用者授權感測器
+        // 提示使用者授權感測器和相機
         setTimeout(() => {
-            if (typeof DeviceMotionEvent !== 'undefined' && 
-                typeof DeviceMotionEvent.requestPermission === 'function') {
+            // 創建授權按鈕
+            const btn = document.createElement('button');
+            btn.textContent = '🎯 開始 AR 追蹤';
+            btn.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                padding: 20px 40px;
+                font-size: 20px;
+                background: #007AFF;
+                color: white;
+                border: none;
+                border-radius: 12px;
+                z-index: 10000;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0,122,255,0.5);
+            `;
+            
+            btn.onclick = async () => {
+                btn.textContent = '⏳ 載入中...';
+                btn.disabled = true;
                 
-                // iOS 13+ 需要使用者互動來授權
-                const btn = document.createElement('button');
-                btn.textContent = '🎯 開始追蹤';
-                btn.style.cssText = `
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    padding: 20px 40px;
-                    font-size: 20px;
-                    background: #007AFF;
-                    color: white;
-                    border: none;
-                    border-radius: 12px;
-                    z-index: 10000;
-                    cursor: pointer;
-                `;
-                
-                btn.onclick = async () => {
-                    try {
-                        const permission = await DeviceMotionEvent.requestPermission();
-                        if (permission === 'granted') {
+                try {
+                    // 呼叫統一的權限請求函數 (定義在 index_indoor.js)
+                    if (typeof requestAllPermissions === 'function') {
+                        const success = await requestAllPermissions();
+                        
+                        if (success) {
                             btn.remove();
-                            console.log("✅ 動作感測器已授權");
+                            console.log("✅ AR 系統已啟動");
+                        } else {
+                            btn.textContent = '❌ 授權失敗，請重試';
+                            btn.disabled = false;
+                            alert('請允許使用相機和感測器權限');
                         }
-                    } catch (error) {
-                        alert('無法授權感測器: ' + error.message);
+                    } else {
+                        console.error("❌ requestAllPermissions 函數不存在");
+                        alert('系統錯誤：找不到權限請求函數');
                     }
-                };
-                
-                document.body.appendChild(btn);
-            }
-        }, 1000);
+                } catch (error) {
+                    console.error('權限請求錯誤:', error);
+                    btn.textContent = '❌ 發生錯誤';
+                    btn.disabled = false;
+                    alert('無法啟動 AR: ' + error.message);
+                }
+            };
+            
+            document.body.appendChild(btn);
+        }, 500);
     });
 </script>
 
