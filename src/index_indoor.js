@@ -26,38 +26,53 @@ scene.background = null; // 攝像頭會設為背景
 // ========== 攝像頭背景設定 ==========
 let videoCameraStream = null;
 let videoTexture = null;
+let videoElement = null;
 
 async function initializeCamera() {
     try {
+        console.log("📷 請求相機權限...");
+        
         videoCameraStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }
+            video: { 
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
         });
         
-        const video = document.createElement('video');
-        // iOS 必需的屬性
-        video.setAttribute('playsinline', '');
-        video.setAttribute('autoplay', '');
-        video.setAttribute('muted', '');
-        video.playsInline = true;
-        video.autoplay = true;
-        video.muted = true;
+        videoElement = document.createElement('video');
+        videoElement.srcObject = videoCameraStream;
+        videoElement.setAttribute('playsinline', ''); // iOS 必需！
+        videoElement.setAttribute('webkit-playsinline', ''); // iOS 舊版本
+        videoElement.autoplay = true;
+        videoElement.muted = true; // iOS 必需靜音才能自動播放
         
-        video.srcObject = videoCameraStream;
-        
-        // 等待影片載入並播放
-        await video.play().catch(err => {
-            console.warn("Video play error:", err);
+        // 等待影片準備好
+        await new Promise((resolve, reject) => {
+            videoElement.onloadedmetadata = () => {
+                videoElement.play()
+                    .then(() => {
+                        console.log("✅ 影片開始播放");
+                        resolve();
+                    })
+                    .catch(reject);
+            };
+            videoElement.onerror = reject;
         });
         
         // 建立攝像頭紋理
-        videoTexture = new THREE.VideoTexture(video);
+        videoTexture = new THREE.VideoTexture(videoElement);
         videoTexture.colorSpace = THREE.SRGBColorSpace;
         scene.background = videoTexture;
         
         console.log("✅ 攝像頭已啟動");
+        console.log(`   影片尺寸: ${videoElement.videoWidth}x${videoElement.videoHeight}`);
+        
+        return true;
     } catch (error) {
-        alert(`攝像頭錯誤: ${error.message}`);
-        console.error("Camera error:", error);
+        console.error("❌ 攝像頭錯誤:", error);
+        alert(`攝像頭錯誤: ${error.message}\n\n請確認:\n1. 已授予相機權限\n2. 沒有其他 App 使用相機\n3. 使用 HTTPS 或 localhost`);
+        return false;
     }
 }
 
@@ -131,7 +146,40 @@ class DeviceOrientationController {
 }
 
 const deviceOrientationControls = new DeviceOrientationController(camera);
-deviceOrientationControls.init();
+
+// ========== 統一的權限請求函數 ==========
+async function requestAllPermissions() {
+    console.log("🔐 請求所有必要權限...");
+    
+    let cameraOK = false;
+    let gyroOK = false;
+    
+    // 1. 請求相機權限
+    try {
+        cameraOK = await initializeCamera();
+    } catch (err) {
+        console.error("相機初始化失敗:", err);
+    }
+    
+    // 2. 請求陀螺儀權限
+    try {
+        await deviceOrientationControls.init();
+        gyroOK = true;
+    } catch (err) {
+        console.error("陀螺儀初始化失敗:", err);
+    }
+    
+    if (cameraOK && gyroOK) {
+        console.log("✅ 所有權限已授予");
+        return true;
+    } else {
+        console.warn("⚠️ 部分權限未授予");
+        return false;
+    }
+}
+
+// 暴露到全域範圍讓 HTML 可以呼叫
+window.requestAllPermissions = requestAllPermissions;
 
 // 在初始化完成後延遲一秒紀錄陀螺儀的初始值
 setTimeout(() => {
@@ -139,10 +187,10 @@ setTimeout(() => {
     console.log(`   Alpha (Z軸): ${(deviceOrientationControls.alpha * 180 / Math.PI).toFixed(2)}°`);
     console.log(`   Beta  (X軸): ${(deviceOrientationControls.beta * 180 / Math.PI).toFixed(2)}°`);
     console.log(`   Gamma (Y軸): ${(deviceOrientationControls.gamma * 180 / Math.PI).toFixed(2)}°`);
-}, 1000);
+}, 2000);
 
-// 初始化攝像頭
-initializeCamera();
+// ⚠️ 不要自動初始化，等待用戶按鈕點擊
+// initializeCamera(); // 移除自動呼叫
 
 // ========== 視窗調整 ==========
 window.addEventListener("resize", ev => {
