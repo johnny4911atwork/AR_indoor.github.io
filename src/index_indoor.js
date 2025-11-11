@@ -139,48 +139,6 @@ class DeviceOrientationController {
 
 const deviceOrientationControls = new DeviceOrientationController(camera);
 
-// ========== 統一的權限請求函數 ==========
-async function requestAllPermissions() {
-    console.log("🔐 請求所有必要權限...");
-
-    let cameraOK = false;
-    let gyroOK = false;
-
-    // 1. 請求相機權限
-    try {
-        cameraOK = await initializeCamera();
-    } catch (err) {
-        console.error("相機初始化失敗:", err);
-    }
-
-    // 2. 請求陀螺儀權限
-    try {
-        await deviceOrientationControls.init();
-        gyroOK = true;
-    } catch (err) {
-        console.error("陀螺儀初始化失敗:", err);
-    }
-
-    if (cameraOK && gyroOK) {
-        console.log("✅ 所有權限已授予");
-        return true;
-    } else {
-        console.warn("⚠️ 部分權限未授予");
-        return false;
-    }
-}
-
-// 暴露到全域範圍讓 HTML 可以呼叫
-window.requestAllPermissions = requestAllPermissions;
-
-// 在初始化完成後延遲一秒紀錄陀螺儀的初始值
-setTimeout(() => {
-    console.log("📊 陀螺儀初始狀態摘要:");
-    console.log(`   Alpha (Z軸): ${(deviceOrientationControls.alpha * 180 / Math.PI).toFixed(2)}°`);
-    console.log(`   Beta  (X軸): ${(deviceOrientationControls.beta * 180 / Math.PI).toFixed(2)}°`);
-    console.log(`   Gamma (Y軸): ${(deviceOrientationControls.gamma * 180 / Math.PI).toFixed(2)}°`);
-}, 2000);
-
 // ========== 視窗調整 ==========
 window.addEventListener("resize", ev => {
     ARRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -468,49 +426,113 @@ function animate() {
 animate();
 
 // ========== UI 控制 ==========
-// 重設位置按鈕
-document.getElementById('setFakeLoc')?.addEventListener('click', () => {
-    tracker.reset();
-    camera.position.set(0, 1.6, 0);
-    updateInfoPanel();
-    alert('✅ 已重設到原點!');
-});
 
-// 在按鈕點擊事件中執行授權邏輯
-const gyroPermissionButton = document.createElement('button');
-gyroPermissionButton.textContent = '啟用陀螺儀';
-gyroPermissionButton.style.position = 'absolute';
-gyroPermissionButton.style.top = '10px';
-gyroPermissionButton.style.left = '10px';
-gyroPermissionButton.style.zIndex = '1000';
-document.body.appendChild(gyroPermissionButton);
-
-gyroPermissionButton.addEventListener('click', async () => {
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        try {
-            const permission = await DeviceOrientationEvent.requestPermission();
-            if (permission === 'granted') {
-                deviceOrientationControls.connect();
-                console.log("✅ 陀螺儀已授權 (iOS)");
-                alert('✅ 陀螺儀已啟用！');
-                gyroPermissionButton.remove(); // 移除按鈕
-            } else {
-                console.warn("⚠️ 使用者拒絕了陀螺儀授權");
-                alert("請允許陀螺儀授權以啟用完整功能。");
-            }
-        } catch (error) {
-            console.error("❌ 陀螺儀授權失敗:", error);
-            alert(`陀螺儀授權失敗: ${error.message || error}`);
+// 1. 初始化相機
+async function initializeAllDevices() {
+    console.log("🔐 初始化所有裝置...");
+    
+    try {
+        const cameraOK = await initializeCamera();
+        if (!cameraOK) {
+            console.warn("⚠️ 相機初始化失敗");
         }
-    } else {
-        console.error("❌ 裝置不支援 DeviceOrientationEvent.requestPermission");
-        alert("您的裝置或瀏覽器不支援陀螺儀授權功能。");
+    } catch (err) {
+        console.error("相機初始化異常:", err);
     }
-});
+    
+    // 初始化陀螺儀控制器 (適用於 Android/其他)
+    try {
+        await deviceOrientationControls.init();
+    } catch (err) {
+        console.error("陀螺儀初始化異常:", err);
+    }
+}
 
-// 初始更新一次資訊面板
-updateInfoPanel();
+// 2. 陀螺儀授權按鈕 (iOS 需要使用者手勢)
+function initializeGyroPermissionButton() {
+    const button = document.createElement('button');
+    button.id = 'gyroPermissionButton';
+    button.textContent = '啟用陀螺儀';
+    button.style.cssText = `
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+        padding: 8px 16px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    `;
+    
+    button.addEventListener('click', async () => {
+        if (typeof DeviceOrientationEvent !== 'undefined' && 
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+            try {
+                const permission = await DeviceOrientationEvent.requestPermission();
+                if (permission === 'granted') {
+                    deviceOrientationControls.connect();
+                    console.log("✅ 陀螺儀已授權 (iOS)");
+                    alert('✅ 陀螺儀已啟用！');
+                    button.remove();
+                } else {
+                    console.warn("⚠️ 使用者拒絕了陀螺儀授權");
+                    alert("請允許陀螺儀授權以啟用完整功能。");
+                }
+            } catch (error) {
+                console.error("❌ 陀螺儀授權失敗:", error);
+                alert(`陀螺儀授權失敗: ${error.message || error}`);
+            }
+        } else {
+            console.error("❌ 裝置不支援 DeviceOrientationEvent.requestPermission");
+            alert("您的裝置或瀏覽器不支援陀螺儀授權功能。");
+        }
+    });
+    
+    document.body.appendChild(button);
+}
 
-console.log("✅ 室內 AR 系統已初始化");
-console.log(`📍 訊號點數量: ${INDOOR_SIGNAL_POINTS.length}`);
-console.log("🚶 開始走動以追蹤位置...");
+// 3. 重設位置按鈕
+function initializeResetButton() {
+    const resetButton = document.getElementById('setFakeLoc');
+    if (resetButton) {
+        resetButton.addEventListener('click', () => {
+            tracker.reset();
+            camera.position.set(0, 1.6, 0);
+            updateInfoPanel();
+            alert('✅ 已重設到原點!');
+        });
+    }
+}
+
+// ========== 系統初始化 ==========
+async function initializeSystem() {
+    console.log("🚀 正在初始化室內 AR 系統...");
+    
+    // 初始化所有裝置
+    await initializeAllDevices();
+    
+    // 初始化 UI 按鈕
+    initializeGyroPermissionButton();
+    initializeResetButton();
+    
+    // 初始更新資訊面板
+    updateInfoPanel();
+    
+    // 記錄系統狀態
+    console.log("✅ 室內 AR 系統已初始化");
+    console.log(`📍 訊號點數量: ${INDOOR_SIGNAL_POINTS.length}`);
+    console.log("🚶 開始走動以追蹤位置...");
+    console.log("📱 提示: 如果是 iOS 設備，請點擊「啟用陀螺儀」按鈕以授權陀螺儀功能");
+}
+
+// 頁面加載後開始初始化
+document.addEventListener('DOMContentLoaded', initializeSystem);
+// 備用: 如果頁面已加載則立即初始化
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeSystem);
+} else {
+    initializeSystem();
+}
