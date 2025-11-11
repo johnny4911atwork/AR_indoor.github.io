@@ -93,21 +93,7 @@ class DeviceOrientationController {
     async init() {
         if (typeof DeviceOrientationEvent !== 'undefined') { 
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                // iOS 13+ 需要使用者授權
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') {
-                        this.connect();
-                        console.log("✅ 陀螺儀已授權 (iOS)");
-                    } else {
-                        console.warn("⚠️ 使用者拒絕了陀螺儀授權");
-                        alert("請允許陀螺儀授權以啟用完整功能。");
-                    }
-                } catch (error) {
-                    console.error("❌ 陀螺儀授權失敗:", error);
-                    alert(`陀螺儀授權失敗: ${error.message || error}
-\n請嘗試以下步驟:\n1. 確認使用的是 Safari 瀏覽器\n2. 確保瀏覽器版本支援陀螺儀功能\n3. 檢查是否已授予權限`);
-                }
+                console.warn("⚠️ 請透過按鈕點擊授權陀螺儀功能。");
             } else {
                 // Android 和其他裝置
                 this.connect();
@@ -490,7 +476,7 @@ document.getElementById('setFakeLoc')?.addEventListener('click', () => {
     alert('✅ 已重設到原點!');
 });
 
-// 在 HTML 中新增按鈕觸發授權請求
+// 在按鈕點擊事件中執行授權邏輯
 const gyroPermissionButton = document.createElement('button');
 gyroPermissionButton.textContent = '啟用陀螺儀';
 gyroPermissionButton.style.position = 'absolute';
@@ -500,13 +486,25 @@ gyroPermissionButton.style.zIndex = '1000';
 document.body.appendChild(gyroPermissionButton);
 
 gyroPermissionButton.addEventListener('click', async () => {
-    try {
-        await deviceOrientationControls.init();
-        alert('✅ 陀螺儀已啟用！');
-        gyroPermissionButton.remove(); // 移除按鈕
-    } catch (error) {
-        console.error('❌ 啟用陀螺儀失敗:', error);
-        alert('啟用陀螺儀失敗，請檢查瀏覽器設定。');
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+            const permission = await DeviceOrientationEvent.requestPermission();
+            if (permission === 'granted') {
+                deviceOrientationControls.connect();
+                console.log("✅ 陀螺儀已授權 (iOS)");
+                alert('✅ 陀螺儀已啟用！');
+                gyroPermissionButton.remove(); // 移除按鈕
+            } else {
+                console.warn("⚠️ 使用者拒絕了陀螺儀授權");
+                alert("請允許陀螺儀授權以啟用完整功能。");
+            }
+        } catch (error) {
+            console.error("❌ 陀螺儀授權失敗:", error);
+            alert(`陀螺儀授權失敗: ${error.message || error}`);
+        }
+    } else {
+        console.error("❌ 裝置不支援 DeviceOrientationEvent.requestPermission");
+        alert("您的裝置或瀏覽器不支援陀螺儀授權功能。");
     }
 });
 
