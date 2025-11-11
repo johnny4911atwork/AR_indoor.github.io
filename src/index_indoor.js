@@ -224,11 +224,11 @@ function getColorForSignal(strength) {
 }
 
 function getRadiusForSignal(strength) {
-    if (strength >= 90) return 0.5;
-    if (strength >= 70) return 0.4;
-    if (strength >= 50) return 0.35;
-    if (strength >= 30) return 0.3;
-    if (strength >= 10) return 0.25;
+    if (strength >= 90) return 0.3; // 原本 0.5，縮小為 0.3
+    if (strength >= 70) return 0.25; // 原本 0.4，縮小為 0.25
+    if (strength >= 50) return 0.2; // 原本 0.35，縮小為 0.2
+    if (strength >= 30) return 0.15; // 原本 0.3，縮小為 0.15
+    if (strength >= 10) return 0.1; // 原本 0.25，縮小為 0.1
     return 0; // 不顯示
 }
 
