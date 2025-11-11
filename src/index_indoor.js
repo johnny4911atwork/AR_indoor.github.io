@@ -1,7 +1,13 @@
 import * as THREE from "https://esm.sh/three";
 
-// ========== AR 初始化 ==========
-// 使用攝像頭功能
+// ╔════════════════════════════════════════════════════════════════╗
+// ║           室內 AR 追蹤系統 - Indoor AR Tracking System          ║
+// ╚════════════════════════════════════════════════════════════════╝
+
+// ═══════════════════════════════════════════════════════════════
+// 第 1 部分：Three.js 基礎設定
+// ═══════════════════════════════════════════════════════════════
+
 const ARCanvas = document.getElementById('glscene');
 const ARRenderer = new THREE.WebGLRenderer({
     canvas: ARCanvas,
@@ -23,7 +29,9 @@ camera.position.set(0, 1.6, 0); // 眼睛高度
 const scene = new THREE.Scene();
 scene.background = null; // 攝像頭會設為背景
 
-// ========== 攝像頭背景設定 ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 2 部分：攝像頭管理
+// ═══════════════════════════════════════════════════════════════
 let videoCameraStream = null;
 let videoTexture = null;
 let videoElement = null;
@@ -74,7 +82,9 @@ async function initializeCamera() {
     }
 }
 
-// ========== 陀螺儀控制 (原生 API) ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 3 部分：陀螺儀控制
+// ═══════════════════════════════════════════════════════════════
 class DeviceOrientationController {
     constructor(camera) {
         this.camera = camera;
@@ -139,14 +149,18 @@ class DeviceOrientationController {
 
 const deviceOrientationControls = new DeviceOrientationController(camera);
 
-// ========== 視窗調整 ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 4 部分：視窗調整
+// ═══════════════════════════════════════════════════════════════
 window.addEventListener("resize", ev => {
     ARRenderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 });
 
-// ========== 室內訊號點資料 (使用 XYZ 座標) ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 5 部分：訊號點資料與視覺化
+// ═══════════════════════════════════════════════════════════════
 // x: 左右 (正=右), y: 上下 (正=上), z: 前後 (負=前方)
 const INDOOR_SIGNAL_POINTS = [
     { x: 0, y: 0, z: -5, power: 90, name: "訊號點 A" },
@@ -157,7 +171,9 @@ const INDOOR_SIGNAL_POINTS = [
     { x: -5, y: 0, z: -2, power: 10, name: "訊號點 F" }
 ];
 
-// ========== Material 快取 ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 6 部分：Material 快取 & 顏色映射
+// ═══════════════════════════════════════════════════════════════
 const materialCache = new Map();
 
 function getMaterialForColor(color) {
@@ -191,7 +207,9 @@ function getRadiusForSignal(strength) {
     return 0; // 不顯示
 }
 
-// ========== 創建訊號視覺化 (AR 物體) ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 7 部分：創建訊號視覺化
+// ═══════════════════════════════════════════════════════════════
 const signalMeshes = [];
 
 function createIndoorSignals() {
@@ -229,7 +247,9 @@ function createIndoorSignals() {
 // 初始化時創建所有訊號點
 createIndoorSignals();
 
-// ========== 步數偵測模組 ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 8 部分：步數偵測模組
+// ═══════════════════════════════════════════════════════════════
 class StepDetector {
     constructor() {
         this.lastMagnitude = 0;
@@ -277,7 +297,9 @@ class StepDetector {
     }
 }
 
-// ========== 位置追蹤器 ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 9 部分：位置追蹤器
+// ═══════════════════════════════════════════════════════════════
 class IndoorPositionTracker {
     constructor(stepLength = 0.65) {
         this.position = { x: 0, y: 1.6, z: 0 }; // 初始位置
@@ -337,7 +359,9 @@ class IndoorPositionTracker {
 // 創建追蹤器
 const tracker = new IndoorPositionTracker(0.65); // 每步 0.65 公尺
 
-// ========== 監聽感測器 ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 10 部分：感測器事件監聽
+// ═══════════════════════════════════════════════════════════════
 let lastTime = Date.now();
 
 // 監聽裝置方向
@@ -377,7 +401,9 @@ window.addEventListener('devicemotion', (event) => {
     }
 });
 
-// ========== 資訊面板更新 ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 11 部分：資訊面板更新
+// ═══════════════════════════════════════════════════════════════
 function updateInfoPanel() {
     const pos = tracker.getPosition();
 
@@ -415,7 +441,9 @@ function updateInfoPanel() {
     }
 }
 
-// ========== 動畫循環 ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 12 部分：動畫循環
+// ═══════════════════════════════════════════════════════════════
 function animate() {
     deviceOrientationControls.update();
 
@@ -425,9 +453,9 @@ function animate() {
 
 animate();
 
-// ========== UI 控制 ==========
-
-// 1. 初始化相機
+// ═══════════════════════════════════════════════════════════════
+// 第 13 部分：UI 初始化函數
+// ═══════════════════════════════════════════════════════════════
 async function initializeAllDevices() {
     console.log("🔐 初始化所有裝置...");
     
@@ -448,7 +476,7 @@ async function initializeAllDevices() {
     }
 }
 
-// 2. 陀螺儀授權按鈕 (iOS 需要使用者手勢)
+// 陀螺儀授權按鈕 (iOS 需要使用者手勢)
 function initializeGyroPermissionButton() {
     const button = document.createElement('button');
     button.id = 'gyroPermissionButton';
@@ -481,7 +509,17 @@ function initializeGyroPermissionButton() {
                 if (permission === 'granted') {
                     deviceOrientationControls.connect();
                     console.log("✅ 陀螺儀已授權 (iOS)");
-                    button.remove();
+                    
+                    // 等待相機初始化完成後再移除按鈕
+                    await initializeAllDevices();
+                    
+                    // 延遲一下確保所有初始化完成
+                    setTimeout(() => {
+                        if (button.parentNode) {
+                            button.remove();
+                        }
+                        console.log("✅ 按鈕已移除，系統準備就緒");
+                    }, 500);
                 } else {
                     console.warn("⚠️ 使用者拒絕了陀螺儀授權");
                     button.textContent = '❌ 拒絕授權，請重試';
@@ -496,14 +534,23 @@ function initializeGyroPermissionButton() {
             // Android 或不需要授權的裝置
             console.log("✅ 裝置不需要授權程序，直接啟用");
             deviceOrientationControls.connect();
-            button.remove();
+            
+            // 等待相機初始化完成後再移除按鈕
+            await initializeAllDevices();
+            
+            setTimeout(() => {
+                if (button.parentNode) {
+                    button.remove();
+                }
+                console.log("✅ 按鈕已移除，系統準備就緒");
+            }, 500);
         }
     });
     
     document.body.appendChild(button);
 }
 
-// 3. 重設位置按鈕
+// 重設位置按鈕
 function initializeResetButton() {
     const resetButton = document.getElementById('setFakeLoc');
     if (resetButton) {
@@ -516,26 +563,25 @@ function initializeResetButton() {
     }
 }
 
-// ========== 系統初始化 ==========
+// ═══════════════════════════════════════════════════════════════
+// 第 14 部分：系統初始化入口
+// ═══════════════════════════════════════════════════════════════
 async function initializeSystem() {
     console.log("🚀 正在初始化室內 AR 系統...");
     
     // 1. 先顯示陀螺儀授權按鈕 (iOS 需要使用者手勢)
     initializeGyroPermissionButton();
     
-    // 2. 初始化相機 (背景執行)
-    await initializeAllDevices();
-    
-    // 3. 初始化重設按鈕
+    // 2. 初始化重設按鈕 (先做，不需要等待)
     initializeResetButton();
     
-    // 4. 初始更新資訊面板
+    // 3. 初始更新資訊面板
     updateInfoPanel();
     
-    // 5. 記錄系統狀態
-    console.log("✅ 室內 AR 系統已初始化");
+    // 4. 記錄系統狀態
+    console.log("✅ 室內 AR 系統框架已初始化，等待使用者授權...");
     console.log(`📍 訊號點數量: ${INDOOR_SIGNAL_POINTS.length}`);
-    console.log("🚶 開始走動以追蹤位置...");
+    console.log("🚶 授權後開始走動以追蹤位置...");
 }
 
 // 頁面加載後開始初始化
