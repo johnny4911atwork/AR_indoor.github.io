@@ -440,6 +440,11 @@ function updateInfoPanel() {
 function animate() {
     deviceOrientationControls.update();
     
+    // ✅ 關鍵：每一幀都更新相機紋理，讓相機畫面持續播放
+    if (videoTexture) {
+        videoTexture.needsUpdate = true;
+    }
+    
     ARRenderer.render(scene, camera);
     requestAnimationFrame(animate);
 }
