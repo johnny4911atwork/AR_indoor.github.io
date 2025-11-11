@@ -478,6 +478,12 @@ async function initializeAllDevices() {
 
 // 陀螺儀授權按鈕 (iOS 需要使用者手勢)
 function initializeGyroPermissionButton() {
+    // 檢查按鈕是否已存在，避免重複建立
+    if (document.getElementById('gyroPermissionButton')) {
+        console.log("⚠️ 陀螺儀按鈕已存在，跳過建立");
+        return;
+    }
+
     const button = document.createElement('button');
     button.id = 'gyroPermissionButton';
     button.textContent = '📱 啟用陀螺儀與相機';
@@ -584,11 +590,10 @@ async function initializeSystem() {
     console.log("🚶 授權後開始走動以追蹤位置...");
 }
 
-// 頁面加載後開始初始化
-document.addEventListener('DOMContentLoaded', initializeSystem);
-// 備用: 如果頁面已加載則立即初始化
+// 頁面加載後開始初始化 (確保只執行一次)
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeSystem);
+    document.addEventListener('DOMContentLoaded', initializeSystem, { once: true });
 } else {
+    // 頁面已加載，立即執行
     initializeSystem();
 }
