@@ -592,17 +592,12 @@ function updateInfoPanel() {
         }
     });
 
-    if (nearestPoint) {
-        // 更新訊號資訊
-        const strengthElement = document.getElementById('signal-strength');
-        strengthElement.textContent = nearestPoint.power.toFixed(1) + ' dBm';
-
-        const color = getColorForSignal(nearestPoint.power);
-        strengthElement.style.color = `#${color.toString(16).padStart(6, '0')}`;
-
-        document.getElementById('nearest-station').textContent = nearestPoint.name;
-        document.getElementById('station-distance').textContent = minDistance.toFixed(2) + ' m';
-    }
+    // 訊號資訊已隱藏，不需要更新
+    // if (nearestPoint) {
+    //     const strengthElement = document.getElementById('signal-strength');
+    //     strengthElement.textContent = nearestPoint.power.toFixed(1) + ' dBm';
+    //     ...
+    // }
 }
 
 // ═══════════════════════════════════════════════════════════════
