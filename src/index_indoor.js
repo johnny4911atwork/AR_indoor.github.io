@@ -447,14 +447,6 @@ function updateInfoPanel() {
 function animate() {
     deviceOrientationControls.update();
 
-    // 讓訊號點始終面向相機 (保持水平不旋轉)
-    signalMeshes.forEach(mesh => {
-        // 復原訊號點的旋轉，使其始終水平
-        mesh.rotation.x = -Math.PI / 2;
-        mesh.rotation.y = 0;
-        mesh.rotation.z = 0;
-    });
-
     ARRenderer.render(scene, camera);
     requestAnimationFrame(animate);
 }
