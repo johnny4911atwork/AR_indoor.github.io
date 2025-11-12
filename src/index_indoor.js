@@ -734,6 +734,34 @@ function initializeResetButton() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 設定面板初始化
+// ═══════════════════════════════════════════════════════════════
+function initializeSettingsPanel() {
+    // 濾波器 α 值滑桿
+    const filterAlphaSlider = document.getElementById('filter-alpha');
+    const filterAlphaValue = document.getElementById('filter-alpha-value');
+    
+    if (filterAlphaSlider) {
+        filterAlphaSlider.addEventListener('input', (e) => {
+            const alpha = parseFloat(e.target.value);
+            tracker.stepDetector.setFilter(true, alpha);
+            filterAlphaValue.textContent = alpha.toFixed(1);
+        });
+    }
+    
+    // 靈敏度下拉選單
+    const sensitivitySelect = document.getElementById('sensitivity');
+    if (sensitivitySelect) {
+        sensitivitySelect.addEventListener('change', (e) => {
+            const level = e.target.value;
+            tracker.stepDetector.setSensitivity(level);
+        });
+    }
+    
+    console.log("⚙️ 設定面板已初始化");
+}
+
+// ═══════════════════════════════════════════════════════════════
 // 第 14 部分：系統初始化入口
 // ═══════════════════════════════════════════════════════════════
 async function initializeSystem() {
@@ -744,16 +772,19 @@ async function initializeSystem() {
 
     // 2. 初始化重設按鈕 (先做，不需要等待)
     initializeResetButton();
+    
+    // 3. 初始化設定面板
+    initializeSettingsPanel();
 
-    // 3. 配置步數偵測器參數
-    tracker.stepDetector.setFilter(true, 0.5);      // 啟用濾波器，α=0.5 
+    // 4. 配置步數偵測器參數
+    tracker.stepDetector.setFilter(true, 0.3);      // 啟用濾波器，α=0.3 (中等平滑)
     tracker.stepDetector.setSensitivity('medium');  // 設置中等靈敏度
-    console.log("⚙️ 步數偵測器已配置 - 濾波器: 啟用 (α=0.5), 靈敏度: 中等");
+    console.log("⚙️ 步數偵測器已配置 - 濾波器: 啟用 (α=0.3), 靈敏度: 中等");
 
-    // 4. 初始更新資訊面板
+    // 5. 初始更新資訊面板
     updateInfoPanel();
 
-    // 5. 記錄系統狀態
+    // 6. 記錄系統狀態
     console.log("✅ 室內 AR 系統框架已初始化，等待使用者授權...");
     console.log(`📍 訊號點數量: ${INDOOR_SIGNAL_POINTS.length}`);
     console.log("🚶 授權後開始走動以追蹤位置...");
