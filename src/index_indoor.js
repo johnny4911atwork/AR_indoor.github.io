@@ -263,8 +263,8 @@ class StepDetector {
         this.rawMagnitudeHistory = []; // 保留原始數據用於比較
         
         // 動態閾值參數
-        this.baseThreshold = 11; // 基礎閾值
-        this.dynamicThreshold = 11; // 動態調整的閾值
+        this.baseThreshold = 10.5; // 基礎閾值
+        this.dynamicThreshold = 10.5; // 動態調整的閾值
         this.avgMagnitude = 9.8; // 移動平均值 (初始為重力加速度)
         this.magnitudeStdDev = 1.0; // 標準差
         
@@ -280,7 +280,7 @@ class StepDetector {
         
         // 統計數據
         this.totalSamples = 0;
-        this.falsePositiveFilter = true; // 啟用假陽性過濾
+        this.falsePositiveFilter = false; // 啟用假陽性過濾
         
         console.log("🎯 進階步數偵測器已啟動 (含低通濾波器)");
         console.log(`   濾波器: ${this.useFilter ? '啟用' : '停用'}, α=${this.filterAlpha}`);
@@ -338,10 +338,10 @@ class StepDetector {
             
             this.magnitudeStdDev = Math.sqrt(variance);
             
-            // 動態調整閾值 = 平均值 + 1.25 * 標準差
+            // 動態調整閾值 = 平均值 + 1 * 標準差
             this.dynamicThreshold = Math.max(
                 this.baseThreshold, 
-                this.avgMagnitude + 1.25 * this.magnitudeStdDev
+                this.avgMagnitude + 1 * this.magnitudeStdDev
             );
         }
 
@@ -372,7 +372,7 @@ class StepDetector {
                 const recentMin = Math.min(...this.magnitudeHistory);
                 const peakProminence = magnitude - recentMin;
                 
-                // 峰值突出度必須 > 標準差 * 2
+                // 峰值突出度必須 > 標準差 * 1.5
                 if (peakProminence < this.magnitudeStdDev * 1.5) {
                     isValidStep = false;
                 }
