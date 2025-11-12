@@ -42,25 +42,10 @@
         transform: scale(0.95);
     }
     
-    .mode-badge {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: #00ff88;
-        color: #000;
-        padding: 8px 15px;
-        border-radius: 20px;
-        font-weight: bold;
-        font-size: 12px;
-        z-index: 1000;
-    }
 </style>
 </head>
 <body>
 <main>
-
-<!-- 模式標記 -->
-<div class="mode-badge">🏠 室內模式</div>
 
 <!-- 資訊面板 -->
 <div id="info-panel">
@@ -83,25 +68,30 @@
     </div>
     <div id="grid-status">訊號點數量: <span id="grid-count">0</span></div>
     
-    <div class="info-section">
-        <div class="info-title" style="font-size: 13px; margin-bottom: 6px;">📶 當前訊號</div>
-        <div class="info-item">
-            <span class="info-label">訊號強度:</span>
-            <span class="info-value" id="signal-strength" style="font-weight: bold;">--</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">最近訊號點:</span>
-            <span class="info-value" id="nearest-station" style="color: #ffcc00;">--</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">距離:</span>
-            <span class="info-value" id="station-distance">--</span>
-        </div>
+    <!-- 設定面板 -->
+    <div id="settings-panel" style="margin-top: 15px; padding: 12px; background: rgba(100, 200, 255, 0.1); border-radius: 6px; border: 1px solid rgba(0, 150, 255, 0.3);">
+        <div class="info-title" style="font-size: 13px; margin-bottom: 10px;">⚙️ 偵測器設定</div>
+        
+        <label style="display: block; margin-bottom: 10px; font-size: 12px;">
+            濾波器 α 值: 
+            <input type="range" id="filter-alpha" min="0.1" max="1.0" step="0.1" value="0.3" style="width: 80%; vertical-align: middle;">
+            <span id="filter-alpha-value" style="display: inline-block; width: 30px; text-align: right;">0.3</span>
+        </label>
+        
+        <label style="display: block; margin-bottom: 5px; font-size: 12px;">
+            靈敏度: 
+            <select id="sensitivity" style="width: 60px; padding: 4px;">
+                <option value="low">低</option>
+                <option value="medium" selected>中</option>
+                <option value="high">高</option>
+            </select>
+        </label>
+        <div style="font-size: 10px; color: #aaa; margin-top: 6px;">💡 α 越小越平滑，靈敏度高會更容易偵測步伐</div>
     </div>
 </div>
 
-<!-- 訊號點列表 -->
-<div id="base-stations">
+<!-- 訊號點列表 (已隱藏) -->
+<div id="base-stations" style="display: none;">
     <div class="info-title">📡 訊號點位置</div>
     <div class="station-item">
         <div class="station-name">訊號點 A</div>
