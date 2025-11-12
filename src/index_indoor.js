@@ -270,7 +270,7 @@ class StepDetector {
         
         // 峰值檢測參數
         this.lastPeakTime = 0;
-        this.minPeakInterval = 250; // 最小峰值間隔 (ms) - 防止過快偵測
+        this.minPeakInterval = 500; // 最小峰值間隔 (ms) - 防止過快偵測
         
         // 步態分析
         this.lastMagnitude = 0;
@@ -364,7 +364,7 @@ class StepDetector {
         // === 4. 時間窗口驗證 ===
         if (isPeak && timeSinceLastPeak > this.minPeakInterval) {
             
-            // === 5. 假陽性過濾 (可選) ===
+            // === 5. 假陽性過濾 ===
             let isValidStep = true;
             
             if (this.falsePositiveFilter) {
@@ -772,9 +772,9 @@ async function initializeSystem() {
     initializeSettingsPanel();
 
     // 4. 配置步數偵測器參數
-    tracker.stepDetector.setFilter(true, 0.3);      // 啟用濾波器，α=0.3 (中等平滑)
+    tracker.stepDetector.setFilter(true, 0.5);      // 啟用濾波器，α=0.5 (中等平滑)
     tracker.stepDetector.setSensitivity('medium');  // 設置中等靈敏度
-    console.log("⚙️ 步數偵測器已配置 - 濾波器: 啟用 (α=0.3), 靈敏度: 中等");
+    console.log("⚙️ 步數偵測器已配置 - 濾波器: 啟用 (α=0.5), 靈敏度: 中等");
 
     // 5. 初始更新資訊面板
     updateInfoPanel();
