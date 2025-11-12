@@ -40,7 +40,7 @@ async function initializeCamera() {
         
         videoElement = document.createElement('video');
         videoElement.srcObject = videoCameraStream;
-        videoElement.setAttribute('playsinline' ''); // iOS 必需！
+        videoElement.setAttribute('playsinline', ''); // iOS 必需！
         videoElement.setAttribute('webkit-playsinline', ''); // iOS 舊版本
         videoElement.autoplay = true;
         videoElement.muted = true; // iOS 必需靜音才能自動播放
