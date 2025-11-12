@@ -447,6 +447,11 @@ function updateInfoPanel() {
 function animate() {
     deviceOrientationControls.update();
 
+    // 使訊號點始終面向相機（公告牌效果）
+    signalMeshes.forEach(mesh => {
+        mesh.lookAt(camera.position);
+    });
+
     ARRenderer.render(scene, camera);
     requestAnimationFrame(animate);
 }
@@ -478,12 +483,6 @@ async function initializeAllDevices() {
 
 // 陀螺儀授權按鈕 (iOS 需要使用者手勢)
 function initializeGyroPermissionButton() {
-    // 檢查按鈕是否已存在，避免重複建立
-    if (document.getElementById('gyroPermissionButton')) {
-        console.log("⚠️ 陀螺儀按鈕已存在，跳過建立");
-        return;
-    }
-
     const button = document.createElement('button');
     button.id = 'gyroPermissionButton';
     button.textContent = '📱 啟用陀螺儀與相機';
