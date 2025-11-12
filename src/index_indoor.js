@@ -248,52 +248,216 @@ function createIndoorSignals() {
 createIndoorSignals();
 
 // ═══════════════════════════════════════════════════════════════
-// 第 8 部分：步數偵測模組
+// 第 8 部分：步數偵測模組 (進階版 - 峰值檢測 + 濾波器)
 // ═══════════════════════════════════════════════════════════════
 class StepDetector {
     constructor() {
+        // 歷史數據緩衝區 (用於峰值檢測)
+        this.magnitudeHistory = [];
+        this.historySize = 10; // 保留最近 10 個樣本
+        
+        // === 低通濾波器 (指數移動平均 EMA) ===
+        this.useFilter = true; // 是否啟用濾波器
+        this.filterAlpha = 0.5; // 平滑係數 (0-1, 越小越平滑)
+        this.filteredMagnitude = 9.8; // 濾波後的加速度 (初始為重力)
+        this.rawMagnitudeHistory = []; // 保留原始數據用於比較
+        
+        // 動態閾值參數
+        this.baseThreshold = 10.5; // 基礎閾值
+        this.dynamicThreshold = 10.5; // 動態調整的閾值
+        this.avgMagnitude = 9.8; // 移動平均值 (初始為重力加速度)
+        this.magnitudeStdDev = 1.0; // 標準差
+        
+        // 峰值檢測參數
+        this.lastPeakTime = 0;
+        this.minPeakInterval = 250; // 最小峰值間隔 (ms) - 防止過快偵測
+        
+        // 步態分析
         this.lastMagnitude = 0;
-        this.threshold = 11.25; // 加速度閾值 (需要根據實際情況調整)
-        this.cooldown = 0;
-        this.cooldownTime = 300; // 300ms 防抖動
+        this.lastDelta = 0; // 上一次的變化率
         this.stepCount = 0;
         this.enabled = true;
+        
+        // 統計數據
+        this.totalSamples = 0;
+        this.falsePositiveFilter = true; // 啟用假陽性過濾
+        
+        console.log("🎯 進階步數偵測器已啟動 (含低通濾波器)");
+        console.log(`   濾波器: ${this.useFilter ? '啟用' : '停用'}, α=${this.filterAlpha}`);
+        console.log(`   基礎閾值: ${this.baseThreshold}, 最短峰值間隔: ${this.minPeakInterval}ms`);
     }
 
     update(acceleration, deltaTime) {
-        // 更新冷卻時間
-        this.cooldown = Math.max(0, this.cooldown - deltaTime);
+        if (!this.enabled) return false;
 
-        // 計算加速度大小
-        const magnitude = Math.sqrt(
+        // 計算原始加速度向量大小
+        const rawMagnitude = Math.sqrt(
             acceleration.x ** 2 +
             acceleration.y ** 2 +
             acceleration.z ** 2
         );
 
-        // 偵測上升邊緣 (從低到高)
-        if (this.enabled &&
-            magnitude > this.threshold && 
-            this.lastMagnitude < this.threshold &&
-            this.cooldown === 0) {
-
-            this.stepCount++;
-            this.cooldown = this.cooldownTime;
-            this.lastMagnitude = magnitude;
-
-            return true; // 偵測到一步
+        // === 低通濾波器 (指數移動平均 EMA) ===
+        let magnitude;
+        if (this.useFilter) {
+            // EMA 公式: filtered = α × raw + (1-α) × previous_filtered
+            this.filteredMagnitude = this.filterAlpha * rawMagnitude + 
+                                     (1 - this.filterAlpha) * this.filteredMagnitude;
+            magnitude = this.filteredMagnitude;
+            
+            // 保留原始數據用於除錯
+            this.rawMagnitudeHistory.push(rawMagnitude);
+            if (this.rawMagnitudeHistory.length > 5) {
+                this.rawMagnitudeHistory.shift();
+            }
+        } else {
+            magnitude = rawMagnitude;
         }
 
+        // 更新歷史緩衝區 (使用濾波後的數據)
+        this.magnitudeHistory.push(magnitude);
+        if (this.magnitudeHistory.length > this.historySize) {
+            this.magnitudeHistory.shift();
+        }
+
+        this.totalSamples++;
+
+        // 需要至少 5 個樣本才開始檢測
+        if (this.magnitudeHistory.length < 5) {
+            this.lastMagnitude = magnitude;
+            return false;
+        }
+
+        // === 1. 計算移動平均和標準差 (動態閾值) ===
+        if (this.totalSamples % 10 === 0) { // 每 10 個樣本更新一次
+            this.avgMagnitude = this.magnitudeHistory.reduce((a, b) => a + b, 0) / this.magnitudeHistory.length;
+            
+            const variance = this.magnitudeHistory.reduce((sum, val) => {
+                return sum + Math.pow(val - this.avgMagnitude, 2);
+            }, 0) / this.magnitudeHistory.length;
+            
+            this.magnitudeStdDev = Math.sqrt(variance);
+            
+            // 動態調整閾值 = 平均值 + 1.5 * 標準差
+            this.dynamicThreshold = Math.max(
+                this.baseThreshold, 
+                this.avgMagnitude + 1.5 * this.magnitudeStdDev
+            );
+        }
+
+        // === 2. 計算加速度變化率 (一階導數) ===
+        const delta = magnitude - this.lastMagnitude;
+        
+        // === 3. 峰值檢測 ===
+        // 條件：
+        // - 當前加速度超過動態閾值
+        // - 變化率從正變負 (峰值頂點)
+        // - 變化率的變化足夠大 (避免平緩波動)
+        const isPeak = magnitude > this.dynamicThreshold && 
+                       this.lastDelta > 0 && 
+                       delta < 0 &&
+                       Math.abs(this.lastDelta) > 0.5; // 變化率閾值
+
+        const currentTime = Date.now();
+        const timeSinceLastPeak = currentTime - this.lastPeakTime;
+
+        // === 4. 時間窗口驗證 ===
+        if (isPeak && timeSinceLastPeak > this.minPeakInterval) {
+            
+            // === 5. 假陽性過濾 (可選) ===
+            let isValidStep = true;
+            
+            if (this.falsePositiveFilter) {
+                // 檢查峰值是否顯著高於最近的最小值
+                const recentMin = Math.min(...this.magnitudeHistory);
+                const peakProminence = magnitude - recentMin;
+                
+                // 峰值突出度必須 > 標準差 * 2
+                if (peakProminence < this.magnitudeStdDev * 2) {
+                    isValidStep = false;
+                }
+            }
+
+            if (isValidStep) {
+                this.stepCount++;
+                this.lastPeakTime = currentTime;
+                this.lastMagnitude = magnitude;
+                this.lastDelta = delta;
+                
+                // 詳細日誌
+                console.log(`🚶 偵測到步伐 #${this.stepCount}`);
+                if (this.useFilter) {
+                    console.log(`   原始: ${rawMagnitude.toFixed(2)}, 濾波: ${magnitude.toFixed(2)} (閾值: ${this.dynamicThreshold.toFixed(2)})`);
+                } else {
+                    console.log(`   加速度: ${magnitude.toFixed(2)} (閾值: ${this.dynamicThreshold.toFixed(2)})`);
+                }
+                console.log(`   峰值突出度: ${(magnitude - Math.min(...this.magnitudeHistory)).toFixed(2)}`);
+                console.log(`   間隔時間: ${timeSinceLastPeak}ms`);
+                
+                return true; // 偵測到有效的一步
+            }
+        }
+
+        // 更新狀態
         this.lastMagnitude = magnitude;
+        this.lastDelta = delta;
+        
         return false;
     }
 
     reset() {
         this.stepCount = 0;
+        this.magnitudeHistory = [];
+        this.rawMagnitudeHistory = [];
+        this.lastPeakTime = 0;
+        this.totalSamples = 0;
+        this.avgMagnitude = 9.8;
+        this.filteredMagnitude = 9.8;
+        this.dynamicThreshold = this.baseThreshold;
+        console.log("🔄 步數偵測器已重設");
     }
 
     setEnabled(enabled) {
         this.enabled = enabled;
+        console.log(`🎯 步數偵測: ${enabled ? '啟用' : '停用'}`);
+    }
+    
+    // 啟用/停用濾波器
+    setFilter(enabled, alpha = 0.5) {
+        this.useFilter = enabled;
+        this.filterAlpha = Math.max(0.1, Math.min(1.0, alpha)); // 限制在 0.1-1.0
+        console.log(`🔧 濾波器: ${enabled ? '啟用' : '停用'}, α=${this.filterAlpha}`);
+        if (enabled) {
+            console.log(`   提示: α 越小越平滑 (建議範圍 0.2-0.5)`);
+        }
+    }
+    
+    // 調整靈敏度
+    setSensitivity(level) {
+        // level: 'low' (1.0), 'medium' (1.5), 'high' (2.0)
+        const multipliers = {
+            'low': 1.0,
+            'medium': 1.5,
+            'high': 2.0
+        };
+        
+        const multiplier = multipliers[level] || 1.5;
+        this.baseThreshold = 10.5 / multiplier;
+        console.log(`🎚️ 靈敏度設為 ${level}, 基礎閾值: ${this.baseThreshold.toFixed(2)}`);
+    }
+    
+    // 獲取統計資訊
+    getStats() {
+        return {
+            stepCount: this.stepCount,
+            avgMagnitude: this.avgMagnitude.toFixed(2),
+            filteredMagnitude: this.filteredMagnitude.toFixed(2),
+            dynamicThreshold: this.dynamicThreshold.toFixed(2),
+            stdDev: this.magnitudeStdDev.toFixed(2),
+            samples: this.totalSamples,
+            filterEnabled: this.useFilter,
+            filterAlpha: this.filterAlpha
+        };
     }
 }
 
@@ -581,13 +745,21 @@ async function initializeSystem() {
     // 2. 初始化重設按鈕 (先做，不需要等待)
     initializeResetButton();
 
-    // 3. 初始更新資訊面板
+    // 3. 配置步數偵測器參數
+    tracker.stepDetector.setFilter(true, 0.5);      // 啟用濾波器，α=0.5 
+    tracker.stepDetector.setSensitivity('medium');  // 設置中等靈敏度
+    console.log("⚙️ 步數偵測器已配置 - 濾波器: 啟用 (α=0.5), 靈敏度: 中等");
+
+    // 4. 初始更新資訊面板
     updateInfoPanel();
 
-    // 4. 記錄系統狀態
+    // 5. 記錄系統狀態
     console.log("✅ 室內 AR 系統框架已初始化，等待使用者授權...");
     console.log(`📍 訊號點數量: ${INDOOR_SIGNAL_POINTS.length}`);
     console.log("🚶 授權後開始走動以追蹤位置...");
+    console.log("💡 提示: 可在瀏覽器控制台使用以下命令調整參數:");
+    console.log("   tracker.stepDetector.setFilter(true, 0.2)   // α越小越平滑");
+    console.log("   tracker.stepDetector.setSensitivity('high') // 調整靈敏度");
 }
 
 // 頁面加載後開始初始化
