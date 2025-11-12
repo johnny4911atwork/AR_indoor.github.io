@@ -214,7 +214,7 @@ function getMaterialForColor(color) {
             color: color,
             transparent: true,
             opacity: 0.7,
-            side: THREE.DouleSide
+            side: THREE.DoubleSide
         }));
     }
     return materialCache.get(color);
