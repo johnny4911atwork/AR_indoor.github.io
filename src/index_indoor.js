@@ -135,12 +135,12 @@ class DeviceOrientationController {
 
     update() {
         // 根據手機方向調整
-        // 只允許左右旋轉（Y軸），不允許前後傾斜（X軸）
-        // 這樣訊號點始終固定在地面上，不會隨著手機傾斜而移動
+        // beta - 90度：補償手機直立時的角度差異
+        // alpha - initialYaw：校準羅盤,讓初始方向為 Z 軸負方向
         this.euler.set(
-            0,                        // X 軸：固定為 0（訊號點不隨手機前後傾斜而動）
+            this.beta - Math.PI / 2,  // X 軸：補償 90 度 (右手坐標系)
             this.alpha - (this.initialYaw || 0), // Y 軸：校準後的左右旋轉
-            0                         // Z 軸：固定為 0
+            0                         // Z 軸：固定為 0，保持水平（訊號點不隨手機傾斜）
         );
 
         this.camera.quaternion.setFromEuler(this.euler);
@@ -446,6 +446,14 @@ function updateInfoPanel() {
 // ═══════════════════════════════════════════════════════════════
 function animate() {
     deviceOrientationControls.update();
+
+    // 讓訊號點始終面向相機 (保持水平不旋轉)
+    signalMeshes.forEach(mesh => {
+        // 復原訊號點的旋轉，使其始終水平
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.rotation.y = 0;
+        mesh.rotation.z = 0;
+    });
 
     ARRenderer.render(scene, camera);
     requestAnimationFrame(animate);
