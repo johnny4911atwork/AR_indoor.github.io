@@ -341,7 +341,7 @@ class StepDetector {
             // 動態調整閾值 = 平均值 + 1.5 * 標準差
             this.dynamicThreshold = Math.max(
                 this.baseThreshold, 
-                this.avgMagnitude + 1.5 * this.magnitudeStdDev
+                this.avgMagnitude + 1.25 * this.magnitudeStdDev
             );
         }
 
@@ -356,7 +356,7 @@ class StepDetector {
         const isPeak = magnitude > this.dynamicThreshold && 
                        this.lastDelta > 0 && 
                        delta < 0 &&
-                       Math.abs(this.lastDelta) > 0.5; // 變化率閾值
+                       Math.abs(this.lastDelta) > 0.25; // 變化率閾值
 
         const currentTime = Date.now();
         const timeSinceLastPeak = currentTime - this.lastPeakTime;
@@ -373,7 +373,7 @@ class StepDetector {
                 const peakProminence = magnitude - recentMin;
                 
                 // 峰值突出度必須 > 標準差 * 2
-                if (peakProminence < this.magnitudeStdDev * 2) {
+                if (peakProminence < this.magnitudeStdDev * 1.5) {
                     isValidStep = false;
                 }
             }
